@@ -2,15 +2,15 @@
 {% set active_page = 'index' %}
 
 {% block content %}
-    <h1>{% block title %} Welcome to LifeCal {% endblock %}</h1>
+    <h1>{% block title %} Life Calendar {% endblock %}</h1>
     {% for entry in entries %}
-        <a href="{{ url_for('entry', entry_id=entry['id']) }}">
-            <h2>{{ entry['start'] }}</h2>
-        </a>
-        <span class="badge text-bg-primary">Created {{ entry['created'] }}, category {{ entry['category'] }}</span>
-        <a href="{{ url_for('edit', entry_id=entry['id']) }}">
-            <span class="badge text-bg-warning">Edit</span>
-        </a>
-        <hr>
+        <div class="card text-bg-primary mb-3" style="max-width: 18rem;">
+            <div class="card-header">{{ entry['start'] }}</div>
+            <div class="card-body">
+                <h5 class="card-title">Category: {{ entry['category'] }}</h5>
+                <p class="card-text">{{ entry['note'] }}</p>
+                <a href="{{ url_for('edit', entry_id=entry['id']) }}" class="btn btn-primary">Edit</a>
+            </div>
+        </div>
     {% endfor %}
 {% endblock %}
