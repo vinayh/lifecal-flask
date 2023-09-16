@@ -1,12 +1,16 @@
 {% extends 'base.html' %}
+{% set active_page = 'index' %}
 
 {% block content %}
     <h1>{% block title %} Welcome to LifeCal {% endblock %}</h1>
     {% for entry in entries %}
-        <a href="#">
+        <a href="{{ url_for('entry', entry_id=entry['id']) }}">
             <h2>{{ entry['start'] }}</h2>
         </a>
-        <span class="badge badge-primary">Created {{ entry['created'] }}, category {{ entry['category'] }}</span>
+        <span class="badge text-bg-primary">Created {{ entry['created'] }}, category {{ entry['category'] }}</span>
+        <a href="{{ url_for('edit', entry_id=entry['id']) }}">
+            <span class="badge text-bg-warning">Edit</span>
+        </a>
         <hr>
     {% endfor %}
 {% endblock %}

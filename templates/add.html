@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% set active_page = 'add' %}
+
+{% block content %}
+<h1>{% block title %} Add a new entry {% endblock %}</h1>
+
+<form method="post">
+    <div class="mb-3">
+        <label for="start" class="form-label">Start date</label>
+        <input type="text" name="start" placeholder="Entry start date"
+               class="form-control" value="{{  request.form['start'] }}">
+        </input>
+    </div>
+
+    <div class="mb-3">
+        <label for="category" class="form-label">Category</label>
+        <input type="text" name="category" placeholder="Entry category"
+               class="form-control" value="{{  request.form['category'] }}">
+        </input>
+    </div>
+
+    <div class="mb-3">
+        <label for="note" class="form-label">Note</label>
+        <textarea name="note" placeholder="Entry note"
+                  class="form-control">{{ request.form['note'] }}</textarea>
+    </div>
+
+    <div class="mb-3">
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </div>
+</form>
+{% endblock %}
