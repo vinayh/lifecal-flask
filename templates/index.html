@@ -2,4 +2,11 @@
 
 {% block content %}
     <h1>{% block title %} Welcome to LifeCal {% endblock %}</h1>
+    {% for entry in entries %}
+        <a href="#">
+            <h2>{{ entry['start'] }}</h2>
+        </a>
+        <span class="badge badge-primary">Created {{ entry['created'] }}, category {{ entry['category'] }}</span>
+        <hr>
+    {% endfor %}
 {% endblock %}
