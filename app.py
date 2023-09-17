@@ -35,12 +35,13 @@ def generate_all_entries(db_entries: list, birth: str, exp_years: int) -> list:
     for x in db_entries:
         x_start_date = datetime.datetime.strptime(x['start'], '%Y-%m-%d')
         db_entries_dict[x_start_date] = x
-    start = datetime.datetime.strptime(birth, '%Y-%m-%d')
+    start_exact = datetime.datetime.strptime(birth, '%Y-%m-%d')
+    start = start_exact - datetime.timedelta(days=start_exact.weekday())
     if start.month == 2 and start.day == 29:
         end = start.replace(year=start.year+exp_years, month=3, day=1)
     else:
         end = start.replace(year=start.year+exp_years)
-    print(start, end)
+    # print(start, end)
     curr = start
     all_entries = []
     while curr <= end:
@@ -59,12 +60,14 @@ app.config['SECRET_KEY'] = get_secret_key()
 
 @app.route('/')
 def index():
+    print('index')
     conn = get_db_connection()
     birth, exp_years = conn.execute('SELECT birth, exp_years FROM users').fetchone()
     db_entries = conn.execute('SELECT * FROM entries').fetchall()
     all_entries = generate_all_entries(db_entries, birth=birth, exp_years=exp_years)
     conn.close()
-    return render_template('index.html', entries=all_entries)
+    return render_template('index.html', entries=all_entries,
+                           birth=birth, exp_years=exp_years)
 
 
 @app.route('/<int:entry_id>')

@@ -7,6 +7,7 @@
 
 {% block content %}
     <h1>{% block title %} Life Calendar {% endblock %}</h1>
+    Date of birth: {{ birth }}, life expectancy: {{ exp_years }}
     <div class="d-flex flex-wrap">
     {% for entry, past in entries %}
         {% if entry.id is defined %}
