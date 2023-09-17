@@ -1,16 +1,18 @@
 {% extends 'base.html' %}
 {% set active_page = 'index' %}
 
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename= 'css/style.css') }}">
+{% endblock %}
+
 {% block content %}
     <h1>{% block title %} Life Calendar {% endblock %}</h1>
+    <div class="d-flex flex-wrap">
     {% for entry in entries %}
-        <div class="card text-bg-primary mb-3" style="max-width: 18rem;">
-            <div class="card-header">{{ entry['start'] }}</div>
-            <div class="card-body">
-                <h5 class="card-title">Category: {{ entry['category'] }}</h5>
-                <p class="card-text">{{ entry['note'] }}</p>
-                <a href="{{ url_for('edit', entry_id=entry['id']) }}" class="btn btn-primary">Edit</a>
+        <a href="{{ url_for('edit', entry_id=entry['id']) }}">
+            <div class="rectangle">
             </div>
-        </div>
+        </a>
     {% endfor %}
+    </div>
 {% endblock %}
