@@ -8,11 +8,20 @@
 {% block content %}
     <h1>{% block title %} Life Calendar {% endblock %}</h1>
     <div class="d-flex flex-wrap">
-    {% for entry in entries %}
-        <a href="{{ url_for('edit', entry_id=entry['id']) }}">
-            <div class="rectangle">
+    {% for entry, past in entries %}
+        {% if entry.id is defined %}
+            <div class="entry filled">
+            <a class="edit_link" href="{{ url_for('edit', entry_id=entry['id']) }}"></a>
             </div>
-        </a>
+        {% elif past %}
+            <div class="entry past">
+            <a class="edit_link" href="{{ url_for('add', start=entry['start']) }}"></a>
+            </div>
+        {% else %}
+            <div class="entry future">
+            <a class="edit_link"></a>
+            </div>
+        {% endif %}
     {% endfor %}
     </div>
 {% endblock %}

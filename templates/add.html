@@ -8,14 +8,14 @@
     <div class="mb-3">
         <label for="start" class="form-label">Start date</label>
         <input type="text" name="start" placeholder="Entry start date"
-               class="form-control" value="{{  request.form['start'] }}">
+               class="form-control" value="{{ request.args.get('start', request.form['start']) }}">
         </input>
     </div>
 
     <div class="mb-3">
         <label for="category" class="form-label">Category</label>
         <input type="text" name="category" placeholder="Entry category"
-               class="form-control" value="{{  request.form['category'] }}">
+               class="form-control" value="{{ request.form['category'] }}">
         </input>
     </div>
 

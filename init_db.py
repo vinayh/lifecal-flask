@@ -13,5 +13,8 @@ cur.execute("INSERT INTO entries (start, category, note) VALUES (?, ?, ?)",
 cur.execute("INSERT INTO entries (start, category, note) VALUES (?, ?, ?)",
             ('2023-09-04', 3, 'Content of entry with category 3'))
 
+cur.execute("INSERT INTO users (birth, exp_years) VALUES (?, ?)",
+            ('1995-03-06', 80))
+
 connection.commit()
 connection.close()

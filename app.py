@@ -1,5 +1,6 @@
 import sqlite3
 import sys
+import datetime
 from pathlib import Path
 from flask import Flask, render_template, request, url_for, flash, redirect
 from werkzeug.exceptions import abort
@@ -29,6 +30,29 @@ def get_entry(entry_id: int):
     return entry
 
 
+def generate_all_entries(db_entries: list, birth: str, exp_years: int) -> list:
+    db_entries_dict = {}
+    for x in db_entries:
+        x_start_date = datetime.datetime.strptime(x['start'], '%Y-%m-%d')
+        db_entries_dict[x_start_date] = x
+    start = datetime.datetime.strptime(birth, '%Y-%m-%d')
+    if start.month == 2 and start.day == 29:
+        end = start.replace(year=start.year+exp_years, month=3, day=1)
+    else:
+        end = start.replace(year=start.year+exp_years)
+    print(start, end)
+    curr = start
+    all_entries = []
+    while curr <= end:
+        past = curr < datetime.datetime.now()
+        if curr in db_entries_dict:
+            all_entries.append((db_entries_dict[curr], past)) # adds sqlite3.Row objects, not dicts as in 'else'
+        else:
+            all_entries.append(({'start': curr.strftime('%Y-%m-%d')}, past))
+        curr += datetime.timedelta(weeks=1)
+    # print(all_entries)
+    return all_entries
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = get_secret_key()
 
@@ -36,9 +60,11 @@ app.config['SECRET_KEY'] = get_secret_key()
 @app.route('/')
 def index():
     conn = get_db_connection()
-    entries = conn.execute('SELECT * FROM entries').fetchall()
+    birth, exp_years = conn.execute('SELECT birth, exp_years FROM users').fetchone()
+    db_entries = conn.execute('SELECT * FROM entries').fetchall()
+    all_entries = generate_all_entries(db_entries, birth=birth, exp_years=exp_years)
     conn.close()
-    return render_template('index.html', entries=entries)
+    return render_template('index.html', entries=all_entries)
 
 
 @app.route('/<int:entry_id>')
@@ -69,7 +95,7 @@ def add():
 
 
 @app.route('/<int:entry_id>/edit', methods=('GET', 'POST'))
-def edit(entry_id):
+def edit(entry_id: int):
     entry = get_entry(entry_id)
     if request.method == 'POST':
         start = request.form['start']
