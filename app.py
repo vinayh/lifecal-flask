@@ -160,11 +160,10 @@ def add():
         start = request.form['start']
         category = request.form['category']
         note = request.form['note']
-        if not start:
-            flash('Start date is required!')
+        start_valid = valid_date(start, only_monday=True, name='Start date')
         if not category:
             flash('Category is required!')
-        if start and category:
+        if start_valid and category:
             conn = get_db_connection()
             conn.execute('INSERT INTO entries (user_id, start, category, note) VALUES (?, ?, ?, ?)',
                          (current_user.id, start, category, note))
@@ -186,11 +185,10 @@ def edit(entry_id: int):
         start = request.form['start']
         category = request.form['category']
         note = request.form['note']
-        if not start:
-            flash('Start date is required!')
+        start_valid = valid_date(start, only_monday=True, name='Start date')
         if not category:
             flash('Category is required!')
-        if start and category:
+        if start_valid and category:
             conn = get_db_connection()
             conn.execute('UPDATE entries SET start = ?, category = ?, note = ? WHERE id = ?',
                          (start, category, note, entry_id))
@@ -215,11 +213,43 @@ def delete(entry_id):
     return redirect(url_for('index'))
 
 
-def valid_iso_date(date: str) -> bool:
-    # TODO: Check start date for valid start of week
+@app.route('/delete_user/<int:user_id>', methods=('POST',))
+@login_required
+def delete_user(user_id: int):
+    if user_id != current_user.id:
+        abort(404)
+    conn = get_db_connection()
+    conn.execute('DELETE FROM entries WHERE user_id = ?', (user_id,))
+    conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
+    conn.commit()
+    conn.close()
+    flash(f'Account and all associated entries were successfully deleted!')
+    logout_user()
+    return redirect(url_for('index'))
+
+
+def valid_date(date: str, only_monday=False, name='Date') -> bool:
+    if not date:
+        flash(f'{name} is required!')
+        return False
     try:
-        datetime.datetime.fromisoformat(date)
+        date = datetime.datetime.fromisoformat(date)
+        if only_monday and date.weekday() != 0:
+            flash(f'{name} must be a Monday (start of week)')
+            return False
+        else:
+            return True
     except:
+        flash(f'{name} is required to be in YYYY-MM-DD format')
+        return False
+
+
+def valid_exp_years(exp_years: str) -> bool:
+    if not exp_years:
+        flash('Life expectancy is required!')
+        return False
+    if not exp_years.isdigit():
+        flash('Life expectancy is required to be a non-negative integer value')
         return False
     return True
 
@@ -227,24 +257,11 @@ def valid_iso_date(date: str) -> bool:
 @app.route('/settings', methods=('GET', 'POST'))
 @login_required
 def settings():
-    conn = get_db_connection()
     if request.method == 'POST':
         birth = request.form['birth']
         exp_years = request.form['exp_years']
-        valid_input = True
-        if not birth:
-            flash('Date of birth is required!')
-            valid_input = False
-        if not valid_iso_date(birth):
-            flash('Date of birth is required to be in YYYY-MM-DD format')
-            valid_input = False
-        if not exp_years:
-            flash('Life expectancy is required!')
-            valid_input = False
-        if not exp_years.isdigit():
-            flash('Life expectancy is required to be a non-negative integer value')
-            valid_input = False
-        if valid_input:
+        valid_birth, valid_years = valid_date(birth, name='Date of birth'), valid_exp_years(exp_years)
+        if valid_birth and valid_years:
             conn = get_db_connection()
             conn.execute('UPDATE users SET birth = ?, exp_years = ? WHERE id = ?',
                          (birth, exp_years, current_user.id))
@@ -252,7 +269,6 @@ def settings():
             conn.close()
             flash('Settings were successfully updated!')
             return redirect(url_for('settings'))
-
     return render_template('settings.html', birth=current_user.birth, exp_years=current_user.exp_years)
 
 

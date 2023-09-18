@@ -14,7 +14,7 @@ cur.execute("INSERT INTO entries (user_id, start, category, note) VALUES (?, ?, 
             (2, '2023-09-04', 3, 'Content of entry with category 3'))
 
 cur.execute("INSERT INTO users (oauth_id, birth, exp_years) VALUES (?, ?, ?)",
-            ('test_oauth_id', '1995-03-08', 80))
+            ('test_oauth_id', '1995-03-06', 80))
 
 connection.commit()
 connection.close()

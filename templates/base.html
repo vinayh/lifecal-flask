@@ -25,6 +25,7 @@
                                 <a class="nav-link" href="{{  url_for('index') }}">Home</a>
                             {% endif %}
                         </li>
+                        {% if current_user.is_authenticated %}
                         <li class="nav-item">
                             {% if active_page == 'add' %}
                                 <a class="nav-link active" aria-current="page" href="{{  url_for('add') }}">Add entry</a>
@@ -39,6 +40,7 @@
                                 <a class="nav-link" href="{{  url_for('settings') }}">Settings</a>
                             {% endif %}
                         </li>
+                        {% endif %}
                     </ul>
                     <form class="d-flex" role="search">
                         {% if current_user.is_authenticated %}
