@@ -1,28 +1,35 @@
 {% extends 'base.html' %}
 {% set active_page = 'index' %}
 
-{% block head %}
+{% block header %}
 <link rel="stylesheet" href="{{ url_for('static', filename= 'css/style.css') }}">
 {% endblock %}
 
 {% block content %}
-    <h1>{% block title %} Life Calendar {% endblock %}</h1>
-    Date of birth: {{ birth }}, life expectancy: {{ exp_years }}
-    <div class="d-flex flex-wrap">
-    {% for entry, past in entries %}
-        {% if entry.id is defined %}
-            <div class="entry filled">
-            <a class="edit_link" href="{{ url_for('edit', entry_id=entry['id']) }}"></a>
-            </div>
-        {% elif past %}
-            <div class="entry past">
-            <a class="edit_link" href="{{ url_for('add', start=entry['start']) }}"></a>
-            </div>
-        {% else %}
-            <div class="entry future">
-            <a class="edit_link"></a>
-            </div>
-        {% endif %}
-    {% endfor %}
-    </div>
+<h1>{% block title %} Life Calendar {% endblock %}</h1>
+Date of birth: {{ birth }}, life expectancy: {{ exp_years }}
+<div class="d-flex flex-wrap">
+{% for entry, past in entries %}
+    {% if entry.id is defined %}
+        <div class="entry filled">
+        <a class="edit_link" data-bs-toggle="tooltip" data-bs-title={{ entry['start'] }} href="{{ url_for('edit', entry_id=entry['id']) }}"></a>
+        </div>
+    {% elif past %}
+        <div class="entry past">
+        <a class="edit_link" data-bs-toggle="tooltip" data-bs-title={{ entry['start'] }}  href="{{ url_for('add', start=entry['start']) }}"></a>
+        </div>
+    {% else %}
+        <div class="entry future">
+        <a class="edit_link" data-bs-toggle="tooltip" data-bs-title={{ entry['start'] }}></a>
+        </div>
+    {% endif %}
+{% endfor %}
+</div>
+{% endblock %}
+
+{% block footer %}
+<script>
+const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+</script>
 {% endblock %}

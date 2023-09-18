@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% set active_page = 'settings' %}
+
+{% block content %}
+<h1>{% block title %} Edit settings {% endblock %}</h1>
+
+<form method="post">
+    <div class="mb-3">
+        <label for="birth" class="form-label">Date of birth</label>
+        <input type="text" name="birth" placeholder="YYYY-MM-DD"
+               class="form-control" value="{{  request.form['start'] or birth }}">
+        </input>
+    </div>
+
+    <div class="mb-3">
+        <label for="exp_years" class="form-label">Life expectancy</label>
+        <input type="text" name="exp_years" placeholder="Number of years"
+               class="form-control" value="{{  request.form['category'] or exp_years }}">
+        </input>
+    </div>
+
+    <div class="mb-3">
+        <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+</form>
+
+{# TODO: Add ability to delete user account and data #}
+{#<hr>#}
+{#<form action="{{ url_for('delete', entry_id=entry['id']) }}" method="POST">#}
+{#    <input type="submit" value="Delete entry" class="btn btn-danger btn-sm"#}
+{#           onclick="return confirm('Are you sure you want to delete this entry?')">#}
+{#</form>#}
+{% endblock %}

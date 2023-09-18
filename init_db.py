@@ -7,14 +7,14 @@ with open('schema.sql') as f:
 
 cur = connection.cursor()
 
-cur.execute("INSERT INTO entries (start, category, note) VALUES (?, ?, ?)",
-            ('2023-09-11', 1, 'Content of entry with category 1'))
+cur.execute("INSERT INTO entries (user_id, start, category, note) VALUES (?, ?, ?, ?)",
+            (2, '2023-09-11', 1, 'Content of entry with category 1'))
 
-cur.execute("INSERT INTO entries (start, category, note) VALUES (?, ?, ?)",
-            ('2023-09-04', 3, 'Content of entry with category 3'))
+cur.execute("INSERT INTO entries (user_id, start, category, note) VALUES (?, ?, ?, ?)",
+            (2, '2023-09-04', 3, 'Content of entry with category 3'))
 
-cur.execute("INSERT INTO users (birth, exp_years) VALUES (?, ?)",
-            ('1995-03-08', 80))
+cur.execute("INSERT INTO users (oauth_id, birth, exp_years) VALUES (?, ?, ?)",
+            ('test_oauth_id', '1995-03-08', 80))
 
 connection.commit()
 connection.close()
