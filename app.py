@@ -73,7 +73,7 @@ def get_user_parameters(conn) -> tuple[int, str, int]:
     return conn.execute('SELECT id, birth, exp_years FROM users').fetchone()
 
 
-def get_or_add_user(oauth_id: str) -> Optional[User]:
+def get_or_add_user(oauth_id: str) -> tuple[User, bool]:
     conn = get_db_connection()
     response = conn.execute('SELECT id, birth, exp_years FROM users WHERE oauth_id = ?', (oauth_id,)).fetchone()
     if response is None:
@@ -81,10 +81,12 @@ def get_or_add_user(oauth_id: str) -> Optional[User]:
         conn.commit()
         id, birth, exp_years = conn.execute('SELECT id, birth, exp_years FROM users WHERE oauth_id = ?',
                                             (oauth_id,)).fetchone()
+        is_new_user = True
     else:
         id, birth, exp_years = response
+        is_new_user = False
     conn.close()
-    return User(id=id, oauth_id=oauth_id, birth=birth, exp_years=exp_years)
+    return User(id=id, oauth_id=oauth_id, birth=birth, exp_years=exp_years), is_new_user
 
 
 def generate_all_entries(db_entries: list, birth: str, exp_years: int) -> list:
@@ -213,6 +215,15 @@ def delete(entry_id):
     return redirect(url_for('index'))
 
 
+def valid_iso_date(date: str) -> bool:
+    # TODO: Check start date for valid start of week
+    try:
+        datetime.datetime.fromisoformat(date)
+    except:
+        return False
+    return True
+
+
 @app.route('/settings', methods=('GET', 'POST'))
 @login_required
 def settings():
@@ -220,11 +231,20 @@ def settings():
     if request.method == 'POST':
         birth = request.form['birth']
         exp_years = request.form['exp_years']
+        valid_input = True
         if not birth:
             flash('Date of birth is required!')
+            valid_input = False
+        if not valid_iso_date(birth):
+            flash('Date of birth is required to be in YYYY-MM-DD format')
+            valid_input = False
         if not exp_years:
             flash('Life expectancy is required!')
-        if birth and exp_years:
+            valid_input = False
+        if not exp_years.isdigit():
+            flash('Life expectancy is required to be a non-negative integer value')
+            valid_input = False
+        if valid_input:
             conn = get_db_connection()
             conn.execute('UPDATE users SET birth = ?, exp_years = ? WHERE id = ?',
                          (birth, exp_years, current_user.id))
@@ -251,7 +271,7 @@ def logout():
 
 @app.route('/authorize/<provider>')
 def oauth2_authorize(provider):
-    if not current_user.is_anonymous:
+    if current_user.is_authenticated:
         return redirect(url_for('index'))
     if provider not in app.config['OAUTH2_PROVIDERS']:
         abort(404)
@@ -270,7 +290,7 @@ def oauth2_authorize(provider):
 
 @app.route('/callback/<provider>')
 def oauth2_callback(provider):
-    if not current_user.is_anonymous:
+    if current_user.is_authenticated:
         return redirect(url_for('index'))
     if provider not in app.config['OAUTH2_PROVIDERS']:
         abort(404)
@@ -303,9 +323,13 @@ def oauth2_callback(provider):
         abort(401)
     # Get or add user
     oauth_id = provider_info['userinfo']['oauth_id'](response)
-    user = get_or_add_user(oauth_id)
+    user, is_new_user = get_or_add_user(oauth_id)
     login_user(user)
-    return redirect(url_for('index'))
+    if is_new_user:
+        flash('Welcome to your new account. Please set your date of birth and life expectancy here.')
+        return redirect(url_for('settings'))
+    else:
+        return redirect(url_for('index'))
 
 
 if __name__ == '__main__':
