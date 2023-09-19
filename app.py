@@ -11,6 +11,7 @@ from sqlalchemy import select, update
 from datetime import date
 from pathlib import Path
 from sys import exit
+from os import getenv
 
 from models import db, User, Entry
 
@@ -27,6 +28,8 @@ SECRETS_TO_PATHS = {
 def get_secret(name: str):
     try:
         path = SECRETS_TO_PATHS[name]
+        if getenv('LIFECAL_ENV') == 'RENDER':
+            path = path.relative_to('.secrets')
         with path.open("r") as f:
             return f.read()
     except:
