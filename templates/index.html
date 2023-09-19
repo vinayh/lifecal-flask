@@ -1,13 +1,13 @@
 {% extends 'base.html' %}
 {% set active_page = 'index' %}
 
-{% block header %}
-<link rel="stylesheet" href="{{ url_for('static', filename= 'css/style.css') }}">
-{% endblock %}
-
+{% block title %} Life Calendar {% endblock %}
 {% block content %}
-<h1>{% block title %} Life Calendar {% endblock %}</h1>
-Date of birth: {{ birth }}, life expectancy: {{ exp_years }}
+    <br>
+    <b>Date of birth:</b> {{ birth }}
+    <br>
+    <b>Life expectancy:</b> {{ exp_years }}
+<hr>
 <div class="d-flex flex-wrap">
 {% for date, past, entry in entries %}
     {% if entry is not none %}

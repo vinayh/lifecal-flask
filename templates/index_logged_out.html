@@ -1,7 +1,8 @@
 {% extends 'base.html' %}
 {% set active_page = 'index' %}
 
+{% block title %} Life Calendar {% endblock %}
 {% block content %}
-<h1>{% block title %} Life Calendar {% endblock %}</h1>
-    Welcome! Please <a href="{{ url_for('login') }}">log in</a> to view your personalized calendar.
+<h1>Welcome!</h1>
+    Please <a href="{{ url_for('login') }}">sign in</a> to view your personalized calendar.
 {% endblock %}

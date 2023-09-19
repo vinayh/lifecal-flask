@@ -7,8 +7,7 @@ from flask_login import LoginManager, current_user, login_user, logout_user, log
 from werkzeug.exceptions import abort
 from urllib.parse import urlencode
 from secrets import token_urlsafe
-# from typing import Optional
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update
 from datetime import date
 from pathlib import Path
 from sys import exit
@@ -19,7 +18,9 @@ from models import db, User, Entry
 SECRETS_TO_PATHS = {
     'FLASK_SECRET_KEY': Path('.secrets/flask_secret_key'),
     'GITHUB_CLIENT_ID': Path('.secrets/github_client_id'),
-    'GITHUB_CLIENT_SECRET': Path('.secrets/github_client_secret')
+    'GITHUB_CLIENT_SECRET': Path('.secrets/github_client_secret'),
+    'GOOGLE_CLIENT_ID': Path('.secrets/google_client_id'),
+    'GOOGLE_CLIENT_SECRET': Path('.secrets/google_client_secret'),
 }
 
 
@@ -29,7 +30,7 @@ def get_secret(name: str):
         with path.open("r") as f:
             return f.read()
     except:
-        exit()
+        exit(f'Error getting secret {name}')
 
 
 def get_oauth2_providers():
@@ -44,6 +45,17 @@ def get_oauth2_providers():
                 'oauth_id': lambda r: 'gh_' + str(r.json()['id']),
             },
             'scopes': ['read:user'],
+        },
+        'google': {
+            'client_id': get_secret('GOOGLE_CLIENT_ID'),
+            'client_secret': get_secret('GOOGLE_CLIENT_SECRET'),
+            'authorize_url': 'https://accounts.google.com/o/oauth2/auth',
+            'token_url': 'https://accounts.google.com/o/oauth2/token',
+            'userinfo': {
+                'url': 'https://www.googleapis.com/oauth2/v3/userinfo',
+                'oauth_id': lambda r: 'go_' + str(r.json()['sub']),
+            },
+            'scopes': ['https://www.googleapis.com/auth/userinfo.profile'],
         },
     }
 
@@ -273,12 +285,13 @@ def login():
 @login_required
 def logout():
     logout_user()
-    flash('Successfully logged out!')
+    flash('Successfully signed out!')
     return redirect(url_for('index'))
 
 
 @app.route('/authorize/<provider>')
 def oauth2_authorize(provider):
+    print(f'OAuth with {provider}')
     if current_user.is_authenticated:
         return redirect(url_for('index'))
     if provider not in app.config['OAUTH2_PROVIDERS']:
@@ -337,6 +350,7 @@ def oauth2_callback(provider):
         flash('Welcome to your new account. Please set your date of birth and life expectancy here.')
         return redirect(url_for('settings'))
     else:
+        flash('You have been signed in. Welcome back!')
         return redirect(url_for('index'))
 
 
