@@ -9,18 +9,18 @@
 <h1>{% block title %} Life Calendar {% endblock %}</h1>
 Date of birth: {{ birth }}, life expectancy: {{ exp_years }}
 <div class="d-flex flex-wrap">
-{% for entry, past in entries %}
-    {% if entry.id is defined %}
+{% for date, past, entry in entries %}
+    {% if entry is not none %}
         <div class="entry filled">
-        <a class="edit_link" data-bs-toggle="tooltip" data-bs-title={{ entry['start'] }} href="{{ url_for('edit', entry_id=entry['id']) }}"></a>
+        <a class="edit_link" data-bs-toggle="tooltip" data-bs-title={{ entry.start }} href="{{ url_for('edit', entry_id=entry.id) }}"></a>
         </div>
     {% elif past %}
         <div class="entry past">
-        <a class="edit_link" data-bs-toggle="tooltip" data-bs-title={{ entry['start'] }}  href="{{ url_for('add', start=entry['start']) }}"></a>
+        <a class="edit_link" data-bs-toggle="tooltip" data-bs-title={{ date }}  href="{{ url_for('add', start=date) }}"></a>
         </div>
     {% else %}
         <div class="entry future">
-        <a class="edit_link" data-bs-toggle="tooltip" data-bs-title={{ entry['start'] }}></a>
+        <a class="edit_link" data-bs-toggle="tooltip" data-bs-title={{ date }}></a>
         </div>
     {% endif %}
 {% endfor %}

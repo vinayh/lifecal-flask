@@ -3,23 +3,17 @@ import datetime
 import requests
 
 from flask import Flask, render_template, request, url_for, flash, redirect, session
-from flask_login import LoginManager, current_user, login_user, logout_user, login_required, UserMixin
+from flask_login import LoginManager, current_user, login_user, logout_user, login_required
 from werkzeug.exceptions import abort
 from urllib.parse import urlencode
 from secrets import token_urlsafe
-from typing import Optional
+# from typing import Optional
+from sqlalchemy import select, update, delete
+from datetime import date
 from pathlib import Path
 from sys import exit
 
-
-class User(UserMixin):
-    def __init__(self, id: int, oauth_id: str, birth: str, exp_years: int, email: str = None):
-        super().__init__()
-        self.id = id
-        self.oauth_id = oauth_id
-        self.birth = birth
-        self.exp_years = exp_years
-        self.email = email
+from models import db, User, Entry
 
 
 SECRETS_TO_PATHS = {
@@ -54,81 +48,86 @@ def get_oauth2_providers():
     }
 
 
+def init_db(app: Flask):
+    db.init_app(app)
+    user_1 = User(oauth_id='test_oauth_id', birth=date.fromisoformat('1995-03-06'), exp_years=80)
+    entry_1 = Entry(user_id=1, start=date.fromisoformat('2023-09-04'), category='1',
+                    note='Content of entry with category 1')
+    entry_2 = Entry(user_id=1, start=date.fromisoformat('2023-09-11'), category='2',
+                    note='Content of entry with category 2')
+    with app.app_context():
+        db.drop_all()
+        db.create_all()
+        db.session.add(user_1)
+        db.session.add(entry_1)
+        db.session.add(entry_2)
+        db.session.commit()
+
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = get_secret('FLASK_SECRET_KEY')
+app.config['OAUTH2_PROVIDERS'] = get_oauth2_providers()
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+login_manager = LoginManager()
+login_manager.init_app(app)
+init_db(app)
+
+
 def get_db_connection():
     conn = sqlite3.connect('database.db')
     conn.row_factory = sqlite3.Row
     return conn
 
 
-def get_entry(entry_id: int):
-    conn = get_db_connection()
-    entry = conn.execute('SELECT * FROM entries WHERE id = ?', (entry_id,)).fetchone()
-    conn.close()
-    if entry is None:
+def get_entry(id: str) -> Entry:
+    result = db.session.execute(select(Entry).where(Entry.id == id)).fetchone()
+    if len(result) == 0 or result[0] is None:
         abort(404)
-    return entry
+    return result[0]
 
 
-def get_user_parameters(conn) -> tuple[int, str, int]:
-    return conn.execute('SELECT id, birth, exp_years FROM users').fetchone()
-
-
-def get_or_add_user(oauth_id: str) -> tuple[User, bool]:
-    conn = get_db_connection()
-    response = conn.execute('SELECT id, birth, exp_years FROM users WHERE oauth_id = ?', (oauth_id,)).fetchone()
-    if response is None:
-        conn.execute('INSERT INTO users (oauth_id, birth, exp_years) VALUES (?, ?, ?)', (oauth_id, '2000-01-01', 80))
-        conn.commit()
-        id, birth, exp_years = conn.execute('SELECT id, birth, exp_years FROM users WHERE oauth_id = ?',
-                                            (oauth_id,)).fetchone()
-        is_new_user = True
-    else:
-        id, birth, exp_years = response
-        is_new_user = False
-    conn.close()
-    return User(id=id, oauth_id=oauth_id, birth=birth, exp_years=exp_years), is_new_user
-
-
-def generate_all_entries(db_entries: list, birth: str, exp_years: int) -> list:
-    db_entries_dict = {}
-    for x in db_entries:
-        x_start_date = datetime.datetime.strptime(x['start'], '%Y-%m-%d')
-        db_entries_dict[x_start_date] = x
-    start_exact = datetime.datetime.strptime(birth, '%Y-%m-%d')
-    start = start_exact - datetime.timedelta(days=start_exact.weekday())
-    if start.month == 2 and start.day == 29:
-        end = start.replace(year=start.year + exp_years, month=3, day=1)
-    else:
-        end = start.replace(year=start.year + exp_years)
-    curr = start
-    all_entries = []
-    while curr <= end:
-        past = curr < datetime.datetime.now()
-        if curr in db_entries_dict:
-            all_entries.append((db_entries_dict[curr], past))  # adds sqlite3.Row objects, not dicts as in 'else'
-        else:
-            all_entries.append(({'start': curr.strftime('%Y-%m-%d')}, past))
-        curr += datetime.timedelta(weeks=1)
-    return all_entries
-
-
-app = Flask(__name__)
-app.config['SECRET_KEY'] = get_secret('FLASK_SECRET_KEY')
-app.config['OAUTH2_PROVIDERS'] = get_oauth2_providers()
-login_manager = LoginManager()
-login_manager.init_app(app)
+# def get_user_parameters(conn) -> tuple[int, str, int]:
+#     return conn.execute('SELECT id, birth, exp_years FROM users').fetchone()
 
 
 @login_manager.user_loader
-def load_user(id: str) -> User:
-    conn = get_db_connection()
-    response = conn.execute('SELECT id, oauth_id, email, birth, exp_years FROM users WHERE id = ?', (id,)).fetchone()
-    conn.close()
-    if response is not None:
-        id, oauth_id, email, birth, exp_years = response
-        return User(id=id, oauth_id=oauth_id, email=email, birth=birth, exp_years=exp_years)
+def get_user(id: str) -> User:
+    result = db.session.execute(select(User).where(User.id == id)).fetchone()
+    if result is None or len(result) == 0 or result[0] is None:
+        abort(404)
+    return result[0]
+
+
+def get_or_add_user(oauth_id: str) -> tuple[User, bool]:
+    result = db.session.execute(select(User).where(User.oauth_id == oauth_id)).fetchone()
+    if result is None or len(result) == 0 or result[0] is None:
+        db.session.add(User(oauth_id=oauth_id, birth=date.fromisoformat('2000-01-01'), exp_years=80))
+        db.session.commit()
+        result = db.session.execute(select(User).where(User.oauth_id == oauth_id)).fetchone()
+        return result[0], True
     else:
-        abort(401)
+        return result[0], False
+
+
+def generate_all_entries(db_entries: list, birth: date, exp_years: int) -> list:
+    db_entries_dict = {x[0].start: x for x in db_entries}
+    start = birth - datetime.timedelta(days=birth.weekday())
+    if start.month == 2 and start.day == 29:  # If leap day but end year is not leap year
+        try:
+            end = start.replace(year=start.year + exp_years)
+        except ValueError:
+            end = start.replace(year=start.year + exp_years, month=3, day=1)
+    else:
+        end = start.replace(year=start.year + exp_years)
+    all_entries = []
+    curr = start
+    while curr <= end:
+        is_past = curr < datetime.datetime.now().date()
+        entry = db_entries_dict[curr][0] if curr in db_entries_dict else None
+        all_entries.append((curr, is_past, entry))  # adds sqlite3.Row objects if entry exists
+        curr += datetime.timedelta(weeks=1)
+    return all_entries
 
 
 @app.route('/')
@@ -136,10 +135,10 @@ def index():
     if current_user.is_anonymous:
         return render_template('index_logged_out.html')
     else:
-        conn = get_db_connection()
-        db_entries = conn.execute('SELECT * FROM entries').fetchall()
+        db_entries = db.session.execute(select(Entry).where(Entry.user_id == current_user.id)).fetchall()
+        for x in db_entries:
+            print(x[0])
         all_entries = generate_all_entries(db_entries, birth=current_user.birth, exp_years=current_user.exp_years)
-        conn.close()
         return render_template('index.html', entries=all_entries,
                                birth=current_user.birth, exp_years=current_user.exp_years)
 
@@ -148,7 +147,7 @@ def index():
 @login_required
 def entry(entry_id):
     entry = get_entry(entry_id)
-    if entry['user_id'] != current_user.id:
+    if entry.user_id != current_user.id:
         abort(404)
     return render_template('entry.html', entry=entry)
 
@@ -164,11 +163,8 @@ def add():
         if not category:
             flash('Category is required!')
         if start_valid and category:
-            conn = get_db_connection()
-            conn.execute('INSERT INTO entries (user_id, start, category, note) VALUES (?, ?, ?, ?)',
-                         (current_user.id, start, category, note))
-            conn.commit()
-            conn.close()
+            db.session.add(Entry(user_id=current_user.id, start=date.fromisoformat(start), category=category, note=note))
+            db.session.commit()
             return redirect(url_for('index'))
 
     return render_template('add.html')
@@ -178,8 +174,8 @@ def add():
 @login_required
 def edit(entry_id: int):
     entry = get_entry(entry_id)
-    print(entry['user_id'], current_user.id)
-    if entry['user_id'] != current_user.id:
+    print(entry.user_id, current_user.id)
+    if entry.user_id != current_user.id:
         abort(404)
     if request.method == 'POST':
         start = request.form['start']
@@ -189,11 +185,8 @@ def edit(entry_id: int):
         if not category:
             flash('Category is required!')
         if start_valid and category:
-            conn = get_db_connection()
-            conn.execute('UPDATE entries SET start = ?, category = ?, note = ? WHERE id = ?',
-                         (start, category, note, entry_id))
-            conn.commit()
-            conn.close()
+            db.session.execute(update(Entry).where(Entry.id == entry_id).values(start=date.fromisoformat(start), category=category, note=note))
+            db.session.commit()
             return redirect(url_for('index'))
 
     return render_template('edit.html', entry=entry)
@@ -203,26 +196,26 @@ def edit(entry_id: int):
 @login_required
 def delete(entry_id):
     entry = get_entry(entry_id)
-    if entry['user_id'] != current_user.id:
+    if entry.user_id != current_user.id:
         abort(404)
-    conn = get_db_connection()
-    conn.execute('DELETE FROM entries WHERE id = ?', (entry_id,))
-    conn.commit()
-    conn.close()
-    flash(f'Entry starting on {entry["start"]} was successfully deleted!')
+    entry_start = entry.start
+    db.session.delete(entry)
+    db.session.commit()
+    flash(f'Entry starting on {entry_start} was successfully deleted!')
     return redirect(url_for('index'))
 
 
 @app.route('/delete_user/<int:user_id>', methods=('POST',))
 @login_required
 def delete_user(user_id: int):
+    print('Delete user endpoint', user_id, current_user.id)
     if user_id != current_user.id:
         abort(404)
-    conn = get_db_connection()
-    conn.execute('DELETE FROM entries WHERE user_id = ?', (user_id,))
-    conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
-    conn.commit()
-    conn.close()
+    Entry.query.filter(Entry.user_id == user_id).delete()
+    # db.session.execute(Entry.delete().where(Entry.user_id == user_id))
+    User.query.filter(User.id == user_id).delete()
+    # db.session.execute(User.delete().where(User.id == user_id))
+    db.session.commit()
     flash(f'Account and all associated entries were successfully deleted!')
     logout_user()
     return redirect(url_for('index'))
@@ -262,11 +255,10 @@ def settings():
         exp_years = request.form['exp_years']
         valid_birth, valid_years = valid_date(birth, name='Date of birth'), valid_exp_years(exp_years)
         if valid_birth and valid_years:
-            conn = get_db_connection()
-            conn.execute('UPDATE users SET birth = ?, exp_years = ? WHERE id = ?',
-                         (birth, exp_years, current_user.id))
-            conn.commit()
-            conn.close()
+            user = db.session.execute(select(User).where(User.id == current_user.id)).fetchone()[0]
+            user.birth = date.fromisoformat(birth)
+            user.exp_years = exp_years
+            db.session.commit()
             flash('Settings were successfully updated!')
             return redirect(url_for('settings'))
     return render_template('settings.html', birth=current_user.birth, exp_years=current_user.exp_years)
