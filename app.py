@@ -26,10 +26,10 @@ SECRETS_TO_PATHS = {
 
 
 def get_secret(name: str):
+    path = SECRETS_TO_PATHS[name]
+    if getenv('LIFECAL_ENV') == 'RENDER':
+        path = path.relative_to('.secrets')
     try:
-        path = SECRETS_TO_PATHS[name]
-        if getenv('LIFECAL_ENV') == 'RENDER':
-            path = path.relative_to('.secrets')
         with path.open("r") as f:
             return f.read()
     except:
