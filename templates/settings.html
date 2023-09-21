@@ -1,27 +1,31 @@
 {% extends 'base.html' %}
 {% set active_page = 'settings' %}
 
+{% block header %}
+{% endblock %}
+
 {% block content %}
 <h1>{% block title %} Edit settings {% endblock %}</h1>
 
 <form method="post">
-    <div class="mb-3">
-        <label for="birth" class="form-label">Date of birth</label>
-        <input type="date" name="birth" placeholder="YYYY-MM-DD"
-               class="form-control" value="{{  request.form['start'] or birth }}">
-        </input>
-    </div>
 
-    <div class="mb-3">
+<div class="container">
+<div class="row">
+    <div class="col-md-auto">
+        <label for="birth" class="form-label">Date of birth:</label>
+        <div id="datepicker">
+            <input type="text" class="form-control" name="birth" value="{{  request.form['start'] or birth }}">
+        </div>
+    </div>
+    <div class="col-md-auto">
         <label for="exp_years" class="form-label">Life expectancy</label>
         <input type="text" name="exp_years" placeholder="Number of years"
                class="form-control" value="{{  request.form['category'] or exp_years }}">
-        </input>
     </div>
-
-    <div class="mb-3">
-        <button type="submit" class="btn btn-primary">Save</button>
-    </div>
+</div>
+</div>
+<br>
+<button type="submit" class="btn btn-primary">Save</button>
 </form>
 
 <hr>
@@ -29,4 +33,11 @@
     <input type="submit" value="Delete user" class="btn btn-danger btn-sm"
            onclick="return confirm('Are you sure you want to delete your account, as well as all associated entries? WARNING: This action is irreversible!')">
 </form>
+
+<script>
+$('#datepicker').datepicker({
+    format: "yyyy-mm-dd",
+    weekStart: 1,
+});
+</script>
 {% endblock %}

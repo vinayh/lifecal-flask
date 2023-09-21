@@ -151,8 +151,6 @@ def index():
         return render_template('index_logged_out.html')
     else:
         db_entries = db.session.execute(select(Entry).where(Entry.user_id == current_user.id)).fetchall()
-        for x in db_entries:
-            print(x[0])
         all_entries = generate_all_entries(db_entries, birth=current_user.birth, exp_years=current_user.exp_years)
         return render_template('index.html', entries=all_entries,
                                birth=current_user.birth, exp_years=current_user.exp_years)
@@ -189,7 +187,6 @@ def add():
 @login_required
 def edit(entry_id: int):
     entry = get_entry(entry_id)
-    print(entry.user_id, current_user.id)
     if entry.user_id != current_user.id:
         abort(404)
     if request.method == 'POST':
@@ -223,7 +220,6 @@ def delete(entry_id):
 @app.route('/delete_user/<int:user_id>', methods=('POST',))
 @login_required
 def delete_user(user_id: int):
-    print('Delete user endpoint', user_id, current_user.id)
     if user_id != current_user.id:
         abort(404)
     Entry.query.filter(Entry.user_id == user_id).delete()
@@ -294,7 +290,6 @@ def logout():
 
 @app.route('/authorize/<provider>')
 def oauth2_authorize(provider):
-    print(f'OAuth with {provider}')
     if current_user.is_authenticated:
         return redirect(url_for('index'))
     if provider not in app.config['OAUTH2_PROVIDERS']:
