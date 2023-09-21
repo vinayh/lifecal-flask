@@ -1,4 +1,4 @@
-import sqlite3
+import os
 import datetime
 import requests
 
@@ -11,7 +11,6 @@ from sqlalchemy import select, update
 from datetime import date
 from pathlib import Path
 from sys import exit
-from os import getenv
 
 from models import db, User, Entry
 
@@ -25,15 +24,24 @@ SECRETS_TO_PATHS = {
 }
 
 
-def get_secret(name: str):
-    path = SECRETS_TO_PATHS[name]
-    if getenv('LIFECAL_ENV') == 'RENDER':
-        path = path.relative_to('.secrets')
+def get_secret_file(path) -> str:
     try:
         with path.open("r") as f:
             return f.read()
     except:
-        exit(f'Error getting secret {name}')
+        exit(f'Error getting secret {path}')
+
+
+def get_secret(name: str):
+    if os.getenv('LIFECAL_ENV') == 'RENDER':
+        return get_secret_file(SECRETS_TO_PATHS[name].relative_to('.secrets'))
+    elif os.getenv('LIFECAL_ENV') == 'FLY':
+        if name in os.environ:
+            return os.getenv(name)
+        else:
+            raise Exception
+    else:
+        return get_secret_file(SECRETS_TO_PATHS[name])
 
 
 def get_oauth2_providers():
@@ -74,6 +82,7 @@ def init_db(app: Flask):
         db.drop_all()
         db.create_all()
         db.session.add(user_1)
+        db.session.commit()
         db.session.add(entry_1)
         db.session.add(entry_2)
         db.session.commit()
@@ -82,17 +91,14 @@ def init_db(app: Flask):
 app = Flask(__name__)
 app.config['SECRET_KEY'] = get_secret('FLASK_SECRET_KEY')
 app.config['OAUTH2_PROVIDERS'] = get_oauth2_providers()
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+if os.getenv('LIFECAL_ENV') != 'FLY':
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql' + os.getenv('DATABASE_URL')[8:]
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 login_manager = LoginManager()
 login_manager.init_app(app)
 init_db(app)
-
-
-def get_db_connection():
-    conn = sqlite3.connect('database.db')
-    conn.row_factory = sqlite3.Row
-    return conn
 
 
 def get_entry(id: str) -> Entry:

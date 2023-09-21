@@ -9,14 +9,14 @@
         <label for="start" class="form-label">Start date</label>
         <div id="weekpicker">
             <input type="text" class="form-control" name="start" placeholder="Entry start date"
-                   value="{{  request.form['start'] or entry['start'] }}">
+                   value="{{ request.form['start'] or entry['start'] }}">
         </div>
     </div>
 
     <div class="mb-3">
         <label for="category" class="form-label">Category</label>
         <input type="text" name="category" placeholder="Entry category"
-               class="form-control" value="{{  request.form['category'] or entry['category'] }}">
+               class="form-control" value="{{ request.form['category'] or entry['category'] }}">
         </input>
     </div>
 
@@ -39,7 +39,9 @@
 <script>
 $('#weekpicker').datepicker({
     format: "yyyy-mm-dd",
+    maxViewMode: 3,
     weekStart: 1,
+    maxViewMode: 3,
     daysOfWeekDisabled: "0,2,3,4,5,6",
     daysOfWeekHighlighted: "1",
     calendarWeeks: true
