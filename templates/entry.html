@@ -3,5 +3,7 @@
 {% block content %}
     <h2>{% block title %} {{ entry['start'] }} {% endblock %}</h2>
     <span class="badge text-bg-primary">Created {{ entry['created'] }}</span>
-    <p>Category {{ entry['category'] }}, note {{ entry['note'] }}</p>
+    <p>Category {{ entry['tag'] }}, note {{ entry['note'] }}</p>
 {%  endblock %}
+
+<a class="btn btn-primary" href="{{ url_for('edit', entry_id=entry['id']) }}">Edit entry</a>

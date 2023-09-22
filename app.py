@@ -1,104 +1,30 @@
-import os
 import datetime
-import requests
+import os
+from datetime import date
+from secrets import token_urlsafe
+from urllib.parse import urlencode
 
+import requests
 from flask import Flask, render_template, request, url_for, flash, redirect, session
 from flask_login import LoginManager, current_user, login_user, logout_user, login_required
-from werkzeug.exceptions import abort
-from urllib.parse import urlencode
-from secrets import token_urlsafe
 from sqlalchemy import select, update
-from datetime import date
-from pathlib import Path
-from sys import exit
+from werkzeug.exceptions import abort
 
-from models import db, User, Entry
-
-
-SECRETS_TO_PATHS = {
-    'FLASK_SECRET_KEY': Path('.secrets/flask_secret_key'),
-    'GITHUB_CLIENT_ID': Path('.secrets/github_client_id'),
-    'GITHUB_CLIENT_SECRET': Path('.secrets/github_client_secret'),
-    'GOOGLE_CLIENT_ID': Path('.secrets/google_client_id'),
-    'GOOGLE_CLIENT_SECRET': Path('.secrets/google_client_secret'),
-}
-
-
-def get_secret_file(path) -> str:
-    try:
-        with path.open("r") as f:
-            return f.read()
-    except:
-        exit(f'Error getting secret {path}')
-
-
-def get_secret(name: str):
-    if os.getenv('LIFECAL_ENV') == 'RENDER':
-        return get_secret_file(SECRETS_TO_PATHS[name].relative_to('.secrets'))
-    elif os.getenv('LIFECAL_ENV') == 'FLY':
-        if name in os.environ:
-            return os.getenv(name)
-        else:
-            raise Exception
-    else:
-        return get_secret_file(SECRETS_TO_PATHS[name])
-
-
-def get_oauth2_providers():
-    return {
-        'github': {
-            'client_id': get_secret('GITHUB_CLIENT_ID'),
-            'client_secret': get_secret('GITHUB_CLIENT_SECRET'),
-            'authorize_url': 'https://github.com/login/oauth/authorize',
-            'token_url': 'https://github.com/login/oauth/access_token',
-            'userinfo': {
-                'url': 'https://api.github.com/user',
-                'oauth_id': lambda r: 'gh_' + str(r.json()['id']),
-            },
-            'scopes': ['read:user'],
-        },
-        'google': {
-            'client_id': get_secret('GOOGLE_CLIENT_ID'),
-            'client_secret': get_secret('GOOGLE_CLIENT_SECRET'),
-            'authorize_url': 'https://accounts.google.com/o/oauth2/auth',
-            'token_url': 'https://accounts.google.com/o/oauth2/token',
-            'userinfo': {
-                'url': 'https://www.googleapis.com/oauth2/v3/userinfo',
-                'oauth_id': lambda r: 'go_' + str(r.json()['sub']),
-            },
-            'scopes': ['https://www.googleapis.com/auth/userinfo.profile'],
-        },
-    }
-
-
-def init_db(app: Flask):
-    db.init_app(app)
-    user_1 = User(oauth_id='test_oauth_id', birth=date.fromisoformat('1995-03-06'), exp_years=80)
-    entry_1 = Entry(user_id=1, start=date.fromisoformat('2023-09-04'), category='1',
-                    note='Content of entry with category 1')
-    entry_2 = Entry(user_id=1, start=date.fromisoformat('2023-09-11'), category='2',
-                    note='Content of entry with category 2')
-    with app.app_context():
-        db.drop_all()
-        db.create_all()
-        db.session.add(user_1)
-        db.session.commit()
-        db.session.add(entry_1)
-        db.session.add(entry_2)
-        db.session.commit()
-
+from config import get_secret, get_oauth2_providers
+from models import db, init_db, User, Entry
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = get_secret('FLASK_SECRET_KEY')
 app.config['OAUTH2_PROVIDERS'] = get_oauth2_providers()
-if os.getenv('LIFECAL_ENV') != 'FLY':
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
-else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql' + os.getenv('DATABASE_URL')[8:]
+app.config['SQLALCHEMY_DATABASE_URI'] = get_secret('DATABASE_URL')
+if app.config['SQLALCHEMY_DATABASE_URI'][:11] == 'postgres://':
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://' + app.config['SQLALCHEMY_DATABASE_URI'][11:]
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 login_manager = LoginManager()
 login_manager.init_app(app)
-init_db(app)
+db.init_app(app)
+if os.getenv('INIT_DB') is not None:
+    init_db(app)
 
 
 def get_entry(id: str) -> Entry:
@@ -106,10 +32,6 @@ def get_entry(id: str) -> Entry:
     if len(result) == 0 or result[0] is None:
         abort(404)
     return result[0]
-
-
-# def get_user_parameters(conn) -> tuple[int, str, int]:
-#     return conn.execute('SELECT id, birth, exp_years FROM users').fetchone()
 
 
 @login_manager.user_loader
@@ -176,13 +98,14 @@ def entry(entry_id):
 def add():
     if request.method == 'POST':
         start = request.form['start']
-        category = request.form['category']
+        tag = request.form['tag']
         note = request.form['note']
         start_valid = valid_date(start, only_monday=True, name='Start date')
-        if not category:
-            flash('Category is required!')
-        if start_valid and category:
-            db.session.add(Entry(user_id=current_user.id, start=date.fromisoformat(start), category=category, note=note))
+        if not tag:
+            flash('Tag is required!')
+        if start_valid and tag:
+            db.session.add(
+                Entry(user_id=current_user.id, start=date.fromisoformat(start), tag=tag, note=note))
             db.session.commit()
             return redirect(url_for('index'))
 
@@ -197,13 +120,15 @@ def edit(entry_id: int):
         abort(404)
     if request.method == 'POST':
         start = request.form['start']
-        category = request.form['category']
+        tag = request.form['tag']
         note = request.form['note']
         start_valid = valid_date(start, only_monday=True, name='Start date')
-        if not category:
-            flash('Category is required!')
-        if start_valid and category:
-            db.session.execute(update(Entry).where(Entry.id == entry_id).values(start=date.fromisoformat(start), category=category, note=note))
+        if not tag:
+            flash('Tag is required!')
+        if start_valid and tag:
+            db.session.execute(
+                update(Entry).where(Entry.id == entry_id).values(start=date.fromisoformat(start), tag=tag,
+                                                                 note=note))
             db.session.commit()
             return redirect(url_for('index'))
 
@@ -229,12 +154,10 @@ def delete_user(user_id: int):
     if user_id != current_user.id:
         abort(404)
     Entry.query.filter(Entry.user_id == user_id).delete()
-    # db.session.execute(Entry.delete().where(Entry.user_id == user_id))
     User.query.filter(User.id == user_id).delete()
-    # db.session.execute(User.delete().where(User.id == user_id))
     db.session.commit()
-    flash(f'Account and all associated entries were successfully deleted!')
     logout_user()
+    flash(f'Account and all associated entries were successfully deleted!')
     return redirect(url_for('index'))
 
 
