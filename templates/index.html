@@ -7,29 +7,31 @@
     <b>Date of birth:</b> {{ birth }}
     <br>
     <b>Life expectancy:</b> {{ exp_years }}
-<hr>
-<div class="d-flex flex-wrap">
-{% for date, past, entry in entries %}
-    {% if entry is not none %}
-        <div class="entry filled">
-        <a class="edit_link" data-bs-toggle="tooltip" data-bs-title={{ entry.start }} href="{{ url_for('edit', entry_id=entry.id) }}"></a>
-        </div>
-    {% elif past %}
-        <div class="entry past">
-        <a class="edit_link" data-bs-toggle="tooltip" data-bs-title={{ date }}  href="{{ url_for('add', start=date) }}"></a>
-        </div>
-    {% else %}
-        <div class="entry future">
-        <a class="edit_link" data-bs-toggle="tooltip" data-bs-title={{ date }}></a>
-        </div>
-    {% endif %}
-{% endfor %}
-</div>
+    <hr>
+    <div class="d-flex flex-wrap">
+        {% for date, past, entry in entries %}
+            {% if entry is not none %}
+                <div class="entry filled">
+                    <a class="edit_link" data-bs-toggle="tooltip"
+                       data-bs-title={{ entry.start }} href="{{ url_for('edit_entry', entry_id=entry.id) }}"></a>
+                </div>
+            {% elif past %}
+                <div class="entry past">
+                    <a class="edit_link" data-bs-toggle="tooltip"
+                       data-bs-title={{ date }}  href="{{ url_for('add_entry', start=date) }}"></a>
+                </div>
+            {% else %}
+                <div class="entry future">
+                    <a class="edit_link" data-bs-toggle="tooltip" data-bs-title={{ date }}></a>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
 {% endblock %}
 
 {% block footer %}
-<script>
-const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
-</script>
+    <script>
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    </script>
 {% endblock %}

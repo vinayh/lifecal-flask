@@ -1,9 +1,9 @@
-{%  extends 'base.html' %}
+{% extends 'base.html' %}
 
 {% block content %}
     <h2>{% block title %} {{ entry['start'] }} {% endblock %}</h2>
     <span class="badge text-bg-primary">Created {{ entry['created'] }}</span>
     <p>Category {{ entry['tag'] }}, note {{ entry['note'] }}</p>
-{%  endblock %}
+{% endblock %}
 
-<a class="btn btn-primary" href="{{ url_for('edit', entry_id=entry['id']) }}">Edit entry</a>
+<a class="btn btn-primary" href="{{ url_for('edit_entry', entry_id=entry['id']) }}">Edit entry</a>

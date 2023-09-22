@@ -11,7 +11,7 @@ from sqlalchemy import select, update
 from werkzeug.exceptions import abort
 
 from config import get_secret, get_oauth2_providers
-from models import db, init_db, User, Entry
+from models import db, init_db, User, Entry, Tag
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = get_secret('FLASK_SECRET_KEY')
@@ -29,7 +29,14 @@ if os.getenv('INIT_DB') is not None:
 
 def get_entry(id: str) -> Entry:
     result = db.session.execute(select(Entry).where(Entry.id == id)).fetchone()
-    if len(result) == 0 or result[0] is None:
+    if result is None or len(result) == 0 or result[0] is None or result[0].user_id != current_user.id:
+        abort(404)
+    return result[0]
+
+
+def get_tag(id: str) -> Tag:
+    result = db.session.execute(select(Tag).where(Tag.id == id)).fetchone()
+    if result is None or len(result) == 0 or result[0] is None or result[0].user_id != current_user.id:
         abort(404)
     return result[0]
 
@@ -78,24 +85,22 @@ def index():
     if current_user.is_anonymous:
         return render_template('index_logged_out.html')
     else:
-        db_entries = db.session.execute(select(Entry).where(Entry.user_id == current_user.id)).fetchall()
-        all_entries = generate_all_entries(db_entries, birth=current_user.birth, exp_years=current_user.exp_years)
+        # db_entries = db.session.execute(select(Entry).where(Entry.user_id == current_user.id)).fetchall()
+        all_entries = generate_all_entries(db_entries=current_user.entries, birth=current_user.birth,
+                                           exp_years=current_user.exp_years)
         return render_template('index.html', entries=all_entries,
                                birth=current_user.birth, exp_years=current_user.exp_years)
 
 
-@app.route('/<int:entry_id>')
+@app.route('/entry/<int:entry_id>')
 @login_required
 def entry(entry_id):
-    entry = get_entry(entry_id)
-    if entry.user_id != current_user.id:
-        abort(404)
-    return render_template('entry.html', entry=entry)
+    return render_template('entry.html', entry=get_entry(entry_id))
 
 
-@app.route('/add', methods=('GET', 'POST'))
+@app.route('/entry/add', methods=('GET', 'POST'))
 @login_required
-def add():
+def add_entry():
     if request.method == 'POST':
         start = request.form['start']
         tag = request.form['tag']
@@ -108,16 +113,13 @@ def add():
                 Entry(user_id=current_user.id, start=date.fromisoformat(start), tag=tag, note=note))
             db.session.commit()
             return redirect(url_for('index'))
-
     return render_template('add.html')
 
 
-@app.route('/<int:entry_id>/edit', methods=('GET', 'POST'))
+@app.route('/entry/<int:entry_id>/edit', methods=('GET', 'POST'))
 @login_required
-def edit(entry_id: int):
+def edit_entry(entry_id: int):
     entry = get_entry(entry_id)
-    if entry.user_id != current_user.id:
-        abort(404)
     if request.method == 'POST':
         start = request.form['start']
         tag = request.form['tag']
@@ -135,30 +137,76 @@ def edit(entry_id: int):
     return render_template('edit.html', entry=entry)
 
 
-@app.route('/<int:entry_id>/delete', methods=('POST',))
+@app.route('/entry/<int:entry_id>/delete', methods=('POST',))
 @login_required
-def delete(entry_id):
+def delete_entry(entry_id):
     entry = get_entry(entry_id)
-    if entry.user_id != current_user.id:
-        abort(404)
     entry_start = entry.start
-    db.session.delete(entry)
+    db.session.delete_entry(entry)
     db.session.commit()
     flash(f'Entry starting on {entry_start} was successfully deleted!')
     return redirect(url_for('index'))
 
 
-@app.route('/delete_user/<int:user_id>', methods=('POST',))
+@app.route('/user/<int:user_id>/delete', methods=('POST',))
 @login_required
 def delete_user(user_id: int):
     if user_id != current_user.id:
         abort(404)
-    Entry.query.filter(Entry.user_id == user_id).delete()
-    User.query.filter(User.id == user_id).delete()
+    Entry.query.filter(Entry.user_id == user_id).delete_entry()
+    User.query.filter(User.id == user_id).delete_entry()
     db.session.commit()
     logout_user()
     flash(f'Account and all associated entries were successfully deleted!')
     return redirect(url_for('index'))
+
+
+def valid_tag(name, color) -> bool:
+    valid = True
+    if request.form['name'] is None:
+        flash('Tag name is required!')
+        valid = False
+    if request.form['color'] is None:
+        flash('Color choice is required!')
+        valid = False
+    return valid
+
+
+@app.route('/tags')
+@login_required
+def tags():
+    return render_template('tags.html', tags=sorted(current_user.tags, key=lambda t: t.created))
+
+
+@app.route('/tag/add', methods=('POST',))
+@login_required
+def add_tag():
+    if valid_tag(request.form['name'], request.form['color']):
+        db.session.add(Tag(user_id=current_user.id, name=request.form['name'], color=request.form['color']))
+        db.session.commit()
+    return redirect(url_for('tags'))
+
+
+@app.route('/tag/<int:tag_id>/edit', methods=('POST',))
+@login_required
+def edit_tag(tag_id: int):
+    tag = get_tag(tag_id)
+    if valid_tag(request.form['name'], request.form['color']):
+        tag.name = request.form['name']
+        tag.color = request.form['color']
+        db.session.commit()
+    return redirect(url_for('tags'))
+
+
+@app.route('/tag/<int:tag_id>/delete', methods=('POST',))
+@login_required
+def delete_tag(tag_id):
+    tag = get_tag(tag_id)
+    tag_name = tag.name
+    db.session.delete(tag)
+    db.session.commit()
+    flash(f'Tag {tag_name} was successfully deleted!')
+    return redirect(url_for('tags'))
 
 
 def valid_date(date: str, only_monday=False, name='Date') -> bool:

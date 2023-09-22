@@ -5,40 +5,41 @@
 {% endblock %}
 
 {% block content %}
-<h1>{% block title %} Edit settings {% endblock %}</h1>
+    <h1>{% block title %} Edit settings {% endblock %}</h1>
 
-<form method="post">
+    <form method="post">
 
-<div class="container">
-<div class="row">
-    <div class="col-md-auto">
-        <label for="birth" class="form-label">Date of birth:</label>
-        <div id="datepicker">
-            <input type="text" class="form-control" name="birth" value="{{  request.form['start'] or birth }}">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-auto">
+                    <label for="birth" class="form-label">Date of birth:</label>
+                    <div id="datepicker">
+                        <input type="text" class="form-control" name="birth"
+                               value="{{ request.form['start'] or birth }}">
+                    </div>
+                </div>
+                <div class="col-md-auto">
+                    <label for="exp_years" class="form-label">Life expectancy</label>
+                    <input type="text" name="exp_years" placeholder="Number of years"
+                           class="form-control" value="{{ request.form['exp_years'] or exp_years }}">
+                </div>
+            </div>
         </div>
-    </div>
-    <div class="col-md-auto">
-        <label for="exp_years" class="form-label">Life expectancy</label>
-        <input type="text" name="exp_years" placeholder="Number of years"
-               class="form-control" value="{{  request.form['exp_years'] or exp_years }}">
-    </div>
-</div>
-</div>
-<br>
-<button type="submit" class="btn btn-primary">Save</button>
-</form>
+        <br>
+        <button type="submit" class="btn btn-primary">Save</button>
+    </form>
 
-<hr>
-<form action="{{ url_for('delete_user', user_id=current_user.id) }}" method="POST">
-    <input type="submit" value="Delete user" class="btn btn-danger btn-sm"
-           onclick="return confirm('Are you sure you want to delete your account, as well as all associated entries? WARNING: This action is irreversible!')">
-</form>
+    <hr>
+    <form action="{{ url_for('delete_user', user_id=current_user.id) }}" method="POST">
+        <input type="submit" value="Delete user" class="btn btn-danger btn-sm"
+               onclick="return confirm('Are you sure you want to delete your account, as well as all associated entries? WARNING: This action is irreversible!')">
+    </form>
 
-<script>
-$('#datepicker').datepicker({
-    format: "yyyy-mm-dd",
-    maxViewMode: 3,
-    weekStart: 1,
-});
-</script>
+    <script>
+        $('#datepicker').datepicker({
+            format: "yyyy-mm-dd",
+            maxViewMode: 3,
+            weekStart: 1,
+        });
+    </script>
 {% endblock %}

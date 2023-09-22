@@ -34,10 +34,17 @@
                         </li>
                         {% if current_user.is_authenticated %}
                         <li class="nav-item">
-                            {% if active_page == 'add' %}
-                                <a class="nav-link active" aria-current="page" href="{{  url_for('add') }}">Add entry</a>
+                            {% if active_page == 'add_entry' %}
+                                <a class="nav-link active" aria-current="page" href="{{  url_for('add_entry') }}">Add entry</a>
                             {% else %}
-                                <a class="nav-link" href="{{  url_for('add') }}">Add entry</a>
+                                <a class="nav-link" href="{{  url_for('add_entry') }}">Add entry</a>
+                            {% endif %}
+                        </li>
+                        <li class="nav-item">
+                            {% if active_page == 'tags' %}
+                                <a class="nav-link active" aria-current="page" href="{{  url_for('tags') }}">Tags</a>
+                            {% else %}
+                                <a class="nav-link" href="{{  url_for('tags') }}">Tags</a>
                             {% endif %}
                         </li>
                         <li class="nav-item">
