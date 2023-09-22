@@ -4,15 +4,18 @@ from typing import List
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Enum, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
-
-from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase, relationship
 
 db = SQLAlchemy()
 
 entry_tag = db.Table('entry_tag',
-                     db.Column('entry_id', db.Integer, db.ForeignKey('entries.id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
-                     db.Column('tag_id', db.Integer, db.ForeignKey('tags.id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True))
+                     db.Column('entry_id', db.Integer,
+                               db.ForeignKey('entries.id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
+                     db.Column('tag_id', db.Integer, db.ForeignKey('tags.id', ondelete='CASCADE', onupdate='CASCADE'),
+                               primary_key=True))
+
+
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
@@ -46,7 +49,7 @@ class Tag(db.Model):
     entries: Mapped[List["Entry"]] = relationship(secondary=entry_tag, back_populates="tags")
     name = db.Column(db.String, nullable=False)
     color = db.Column(db.String, nullable=False)
-    type = db.Column(Enum('entry', 'goal', name='tag_types'), nullable=True)  #  TODO: Optional for now
+    type = db.Column(Enum('entry', 'goal', name='tag_types'), nullable=True)  # TODO: Optional for now
     category = db.Column(db.Integer, nullable=True)  # Optional, to use for showing/hiding layers of tags
 
 
@@ -55,7 +58,8 @@ def init_db(app):
     user_1 = User(oauth_id='test_oauth_id', birth=date.fromisoformat('1995-03-06'), exp_years=80)
     tag_1 = Tag(user_id=1, name='Tag 1', color='Color 1')
     tag_2 = Tag(user_id=1, name='Tag 2', color='Color 2')
-    entry_1 = Entry(user_id=1, start=date.fromisoformat('2023-09-04'), tags=[tag_1],  # TODO: fix these entries to create and use tags
+    entry_1 = Entry(user_id=1, start=date.fromisoformat('2023-09-04'), tags=[tag_1],
+                    # TODO: fix these entries to create and use tags
                     note='Content of entry with tag 1')
     entry_2 = Entry(user_id=1, start=date.fromisoformat('2023-09-11'), tags=[tag_1, tag_2],
                     note='Content of entry with tag 2')
