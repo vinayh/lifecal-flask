@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 import requests
 from flask import Flask, render_template, request, url_for, flash, redirect, session
 from flask_login import LoginManager, current_user, login_user, logout_user, login_required
-from sqlalchemy import select, update
+from sqlalchemy import select
 from werkzeug.exceptions import abort
 
 from config import get_secret, get_oauth2_providers
@@ -61,7 +61,7 @@ def get_or_add_user(oauth_id: str) -> tuple[User, bool]:
 
 
 def generate_all_entries(db_entries: list, birth: date, exp_years: int) -> list:
-    db_entries_dict = {x[0].start: x for x in db_entries}
+    db_entries_dict = {x.start: x for x in db_entries}
     start = birth - datetime.timedelta(days=birth.weekday())
     if start.month == 2 and start.day == 29:  # If leap day but end year is not leap year
         try:
@@ -74,7 +74,7 @@ def generate_all_entries(db_entries: list, birth: date, exp_years: int) -> list:
     curr = start
     while curr <= end:
         is_past = curr < datetime.datetime.now().date()
-        entry = db_entries_dict[curr][0] if curr in db_entries_dict else None
+        entry = db_entries_dict[curr] if curr in db_entries_dict else None
         all_entries.append((curr, is_past, entry))  # adds sqlite3.Row objects if entry exists
         curr += datetime.timedelta(weeks=1)
     return all_entries
@@ -103,17 +103,16 @@ def entry(entry_id):
 def add_entry():
     if request.method == 'POST':
         start = request.form['start']
-        tag = request.form['tag']
+        tag_ids = request.form.getlist('tags')
         note = request.form['note']
         start_valid = valid_date(start, only_monday=True, name='Start date')
-        if not tag:
-            flash('Tag is required!')
-        if start_valid and tag:
+        tags, tags_valid = valid_entry_tags(tag_ids)  # Checks for >= 1 tags that match current_user
+        if start_valid and tags_valid:
             db.session.add(
-                Entry(user_id=current_user.id, start=date.fromisoformat(start), tag=tag, note=note))
+                Entry(user_id=current_user.id, start=date.fromisoformat(start), tags=tags, note=note))
             db.session.commit()
             return redirect(url_for('index'))
-    return render_template('add.html')
+    return render_template('add.html', tags=current_user.tags)
 
 
 @app.route('/entry/<int:entry_id>/edit', methods=('GET', 'POST'))
@@ -122,19 +121,17 @@ def edit_entry(entry_id: int):
     entry = get_entry(entry_id)
     if request.method == 'POST':
         start = request.form['start']
-        tag = request.form['tag']
+        tag_ids = request.form.getlist('tags')
         note = request.form['note']
         start_valid = valid_date(start, only_monday=True, name='Start date')
-        if not tag:
-            flash('Tag is required!')
-        if start_valid and tag:
-            db.session.execute(
-                update(Entry).where(Entry.id == entry_id).values(start=date.fromisoformat(start), tag=tag,
-                                                                 note=note))
+        tags, tags_valid = valid_entry_tags(tag_ids)  # Checks for >= 1 tags that match current_user
+        if start_valid and tags_valid:
+            entry.start = date.fromisoformat(start)
+            entry.tags = tags
+            entry.note = note
             db.session.commit()
             return redirect(url_for('index'))
-
-    return render_template('edit.html', entry=entry)
+    return render_template('edit.html', entry=entry, tags=current_user.tags)
 
 
 @app.route('/entry/<int:entry_id>/delete', methods=('POST',))
@@ -223,6 +220,18 @@ def valid_date(date: str, only_monday=False, name='Date') -> bool:
     except:
         flash(f'{name} is required to be in YYYY-MM-DD format')
         return False
+
+
+def valid_entry_tags(tags: list) -> tuple[list[Tag], bool]:
+    if len(tags) == 0:
+        flash('At least one tag must be selected!')
+        return [], False
+    tags_db = [get_tag(t) for t in tags]
+    for t in tags_db:
+        if t.user_id != current_user.id:
+            flash('Invalid tag choice!')
+            return [], False
+    return tags_db, True
 
 
 def valid_exp_years(exp_years: str) -> bool:

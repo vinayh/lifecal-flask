@@ -2,43 +2,45 @@
 {% set active_page = 'add_entry' %}
 
 {% block content %}
-<h1>{% block title %} Add a new entry {% endblock %}</h1>
+    <h1>{% block title %} Add a new entry {% endblock %}</h1>
 
-<form method="post">
-    <div class="mb-3">
-        <label for="start" class="form-label">Start date</label>
-        <div id="weekpicker">
-            <input type="text" class="form-control" name="start" placeholder="Entry start date: YYYY-MM-DD"
-                   value="{{ request.form['start'] or request.args.get('start') }}">
+    <form method="post">
+        <div class="mb-3">
+            <label for="start" class="form-label">Start date</label>
+            <div id="weekpicker">
+                <input type="text" class="form-control" name="start" placeholder="Entry start date: YYYY-MM-DD"
+                       value="{{ request.form['start'] or request.args.get('start') }}">
+            </div>
         </div>
-    </div>
 
-    <div class="mb-3">
-        <label for="tags" class="form-label">Tag</label>
-        <input type="text" name="tag" placeholder="Entry tags"
-               class="form-control" value="{{ request.form['tags'] }}">
-        </input>
-    </div>
+        <div class="mb-3">
+            <label for="tags" class="form-label">Tags</label>
+            <select name="tags" class="form-select" multiple aria-label="multiple select example">
+                {% for t in tags %}
+                    <option value="{{ t.id }}">{{ t.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
-    <div class="mb-3">
-        <label for="note" class="form-label">Note</label>
-        <textarea name="note" placeholder="Entry note"
-                  class="form-control">{{ request.form['note'] }}</textarea>
-    </div>
+        <div class="mb-3">
+            <label for="note" class="form-label">Note</label>
+            <textarea name="note" placeholder="Entry note"
+                      class="form-control">{{ request.form['note'] }}</textarea>
+        </div>
 
-    <div class="mb-3">
-        <button type="submit" class="btn btn-primary">Submit</button>
-    </div>
-</form>
+        <div class="mb-3">
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </div>
+    </form>
 
-<script>
-$('#weekpicker').datepicker({
-    format: "yyyy-mm-dd",
-    maxViewMode: 3,
-    weekStart: 1,
-    daysOfWeekDisabled: "0,2,3,4,5,6",
-    daysOfWeekHighlighted: "1",
-    calendarWeeks: true
-});
-</script>
+    <script>
+        $('#weekpicker').datepicker({
+            format: "yyyy-mm-dd",
+            maxViewMode: 3,
+            weekStart: 1,
+            daysOfWeekDisabled: "0,2,3,4,5,6",
+            daysOfWeekHighlighted: "1",
+            calendarWeeks: true
+        });
+    </script>
 {% endblock %}
