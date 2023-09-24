@@ -107,14 +107,15 @@ def entry_helper(edit: bool, entry: Optional[Entry] = None):
         note = request.form['note']
         start_valid = valid_date(start, only_monday=True, name='Start date')
         tags, tags_valid = valid_entry_tags(tag_ids)  # Checks for >= 1 tags that match current_user
-        if not edit:  # If adding an entry with a date that already exists
-            result = db.session.execute(
-                select(Entry).where((Entry.user_id == current_user.id) & (Entry.start == start))).fetchone()
-            if result is not None and len(result) > 0:
-                entry = result[0]
-                edit = True
-                flash('Entry with specified date already exists. Editing existing entry!', category='danger')
         if start_valid and tags_valid:
+            if not edit:  # If adding an entry with a date that already exists
+                result = db.session.execute(
+                    select(Entry).where((Entry.user_id == current_user.id) & (Entry.start == start))).fetchone()
+                if result is not None and len(result) > 0:
+                    entry = result[0]
+                    edit = True
+                    flash(f'Entry with specified date already exists. Edited existing entry for {start}!',
+                          category='danger')
             if edit:
                 entry.start = date.fromisoformat(start)
                 entry.tags = tags

@@ -1,6 +1,15 @@
 {% extends 'base.html' %}
 {% set active_page = 'add_entry' %}
 
+{% block header %}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5/dist/js/bootstrap.bundle.min.js" type="module"></script>
+    <script type="module">
+        import Tags from "https://cdn.jsdelivr.net/gh/lekoala/bootstrap5-tags@master/tags.js";
+
+        Tags.init("select");
+    </script>
+{% endblock %}
+
 {% block content %}
     <h1>{% block title %} Add a new entry {% endblock %}</h1>
 
@@ -13,11 +22,14 @@
             </div>
         </div>
 
+
         <div class="mb-3">
             <label for="tags" class="form-label">Tags</label>
             <select name="tags" class="form-select" multiple aria-label="multiple select example">
+                {# Needed for first actual tag to show when selected #}
+                <option selected disabled hidden value="">Choose a tag...</option>
                 {% for t in tags %}
-                    <option value="{{ t.id }}">{{ t.name }}</option>
+                    <option data-badge-style="success" value="{{ t.id }}">{{ t.name }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -41,7 +53,7 @@
             daysOfWeekDisabled: "0,2,3,4,5,6",
             daysOfWeekHighlighted: "1",
             calendarWeeks: true,
-            datesDisabled: {{ disabled_dates | safe }}
+            {#datesDisabled: {{ disabled_dates | safe }}#}
         });
     </script>
 {% endblock %}
