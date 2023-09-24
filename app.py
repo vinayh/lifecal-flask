@@ -1,7 +1,9 @@
 import datetime
+import json
 import os
 from datetime import date
 from secrets import token_urlsafe
+from typing import Optional
 from urllib.parse import urlencode
 
 import requests
@@ -27,14 +29,14 @@ if os.getenv('INIT_DB') is not None:
     init_db(app)
 
 
-def get_entry(id: str) -> Entry:
+def get_entry_by_id(id: str) -> Entry:
     result = db.session.execute(select(Entry).where(Entry.id == id)).fetchone()
     if result is None or len(result) == 0 or result[0] is None or result[0].user_id != current_user.id:
         abort(404)
     return result[0]
 
 
-def get_tag(id: str) -> Tag:
+def get_tag_by_id(id: str) -> Tag:
     result = db.session.execute(select(Tag).where(Tag.id == id)).fetchone()
     if result is None or len(result) == 0 or result[0] is None or result[0].user_id != current_user.id:
         abort(404)
@@ -42,14 +44,14 @@ def get_tag(id: str) -> Tag:
 
 
 @login_manager.user_loader
-def get_user(id: str) -> User:
+def get_user_by_id(id: str) -> User:
     result = db.session.execute(select(User).where(User.id == id)).fetchone()
     if result is None or len(result) == 0 or result[0] is None:
         abort(404)
     return result[0]
 
 
-def get_or_add_user(oauth_id: str) -> tuple[User, bool]:
+def get_create_user_by_oauth_id(oauth_id: str) -> tuple[User, bool]:
     result = db.session.execute(select(User).where(User.oauth_id == oauth_id)).fetchone()
     if result is None or len(result) == 0 or result[0] is None:
         db.session.add(User(oauth_id=oauth_id, birth=date.fromisoformat('2000-01-01'), exp_years=80))
@@ -60,7 +62,8 @@ def get_or_add_user(oauth_id: str) -> tuple[User, bool]:
         return result[0], False
 
 
-def generate_all_entries(db_entries: list, birth: date, exp_years: int) -> list:
+def generate_all_entries(db_entries: list[Entry], birth: date, exp_years: int) -> list[
+    tuple[date, bool, Optional[Entry]]]:
     db_entries_dict = {x.start: x for x in db_entries}
     start = birth - datetime.timedelta(days=birth.weekday())
     if start.month == 2 and start.day == 29:  # If leap day but end year is not leap year
@@ -81,11 +84,10 @@ def generate_all_entries(db_entries: list, birth: date, exp_years: int) -> list:
 
 
 @app.route('/')
-def index():
+def index() -> str:
     if current_user.is_anonymous:
         return render_template('index_logged_out.html')
     else:
-        # db_entries = db.session.execute(select(Entry).where(Entry.user_id == current_user.id)).fetchall()
         all_entries = generate_all_entries(db_entries=current_user.entries, birth=current_user.birth,
                                            exp_years=current_user.exp_years)
         return render_template('index.html', entries=all_entries,
@@ -94,84 +96,92 @@ def index():
 
 @app.route('/entry/<int:entry_id>')
 @login_required
-def entry(entry_id):
-    return render_template('entry.html', entry=get_entry(entry_id))
+def entry(entry_id: str) -> str:
+    return render_template('entry.html', entry=get_entry_by_id(entry_id))
+
+
+def entry_helper(edit: bool, entry: Optional[Entry] = None):
+    if request.method == 'POST':
+        start = request.form['start']
+        tag_ids = request.form.getlist('tags')
+        note = request.form['note']
+        start_valid = valid_date(start, only_monday=True, name='Start date')
+        tags, tags_valid = valid_entry_tags(tag_ids)  # Checks for >= 1 tags that match current_user
+        if not edit:  # If adding an entry with a date that already exists
+            result = db.session.execute(
+                select(Entry).where((Entry.user_id == current_user.id) & (Entry.start == start))).fetchone()
+            if result is not None and len(result) > 0:
+                entry = result[0]
+                edit = True
+                flash('Entry with specified date already exists. Editing existing entry!', category='danger')
+        if start_valid and tags_valid:
+            if edit:
+                entry.start = date.fromisoformat(start)
+                entry.tags = tags
+                entry.note = note
+            else:  # Add new entry
+                db.session.add(
+                    Entry(user_id=current_user.id, start=date.fromisoformat(start), tags=tags, note=note))
+            db.session.commit()
+            return redirect(url_for('index'))
+    if edit:
+        existing_entry_dates = json.dumps([x.start.isoformat() for x in current_user.entries if x.start != entry.start])
+        return render_template('edit.html', tags=current_user.tags, disabled_dates=existing_entry_dates, entry=entry)
+    else:  # Add new entry
+        existing_entry_dates = json.dumps([x.start.isoformat() for x in current_user.entries])
+        return render_template('add.html', tags=current_user.tags, disabled_dates=existing_entry_dates)
 
 
 @app.route('/entry/add', methods=('GET', 'POST'))
 @login_required
 def add_entry():
-    if request.method == 'POST':
-        start = request.form['start']
-        tag_ids = request.form.getlist('tags')
-        note = request.form['note']
-        start_valid = valid_date(start, only_monday=True, name='Start date')
-        tags, tags_valid = valid_entry_tags(tag_ids)  # Checks for >= 1 tags that match current_user
-        if start_valid and tags_valid:
-            db.session.add(
-                Entry(user_id=current_user.id, start=date.fromisoformat(start), tags=tags, note=note))
-            db.session.commit()
-            return redirect(url_for('index'))
-    return render_template('add.html', tags=current_user.tags)
+    return entry_helper(edit=False)
 
 
 @app.route('/entry/<int:entry_id>/edit', methods=('GET', 'POST'))
 @login_required
-def edit_entry(entry_id: int):
-    entry = get_entry(entry_id)
-    if request.method == 'POST':
-        start = request.form['start']
-        tag_ids = request.form.getlist('tags')
-        note = request.form['note']
-        start_valid = valid_date(start, only_monday=True, name='Start date')
-        tags, tags_valid = valid_entry_tags(tag_ids)  # Checks for >= 1 tags that match current_user
-        if start_valid and tags_valid:
-            entry.start = date.fromisoformat(start)
-            entry.tags = tags
-            entry.note = note
-            db.session.commit()
-            return redirect(url_for('index'))
-    return render_template('edit.html', entry=entry, tags=current_user.tags)
+def edit_entry(entry_id: str):
+    return entry_helper(edit=True, entry=get_entry_by_id(entry_id))
 
 
 @app.route('/entry/<int:entry_id>/delete', methods=('POST',))
 @login_required
-def delete_entry(entry_id):
-    entry = get_entry(entry_id)
+def delete_entry(entry_id: str):
+    entry = get_entry_by_id(entry_id)
     entry_start = entry.start
     db.session.delete_entry(entry)
     db.session.commit()
-    flash(f'Entry starting on {entry_start} was successfully deleted!')
+    flash(f'Entry starting on {entry_start} was successfully deleted!', category='success')
     return redirect(url_for('index'))
 
 
 @app.route('/user/<int:user_id>/delete', methods=('POST',))
 @login_required
-def delete_user(user_id: int):
+def delete_user(user_id: str):
     if user_id != current_user.id:
         abort(404)
     Entry.query.filter(Entry.user_id == user_id).delete_entry()
     User.query.filter(User.id == user_id).delete_entry()
     db.session.commit()
     logout_user()
-    flash(f'Account and all associated entries were successfully deleted!')
+    flash(f'Account and all associated entries were successfully deleted!', category='success')
     return redirect(url_for('index'))
 
 
-def valid_tag(name, color) -> bool:
+def valid_tag(name: str, color: str) -> bool:
     valid = True
-    if request.form['name'] is None:
-        flash('Tag name is required!')
+    if name is None:
+        flash('Tag name is required!', category='danger')
         valid = False
-    if request.form['color'] is None:
-        flash('Color choice is required!')
+    if color is None:
+        flash('Color choice is required!', category='danger')
         valid = False
     return valid
 
 
 @app.route('/tags')
 @login_required
-def tags():
+def tags() -> str:
     return render_template('tags.html', tags=sorted(current_user.tags, key=lambda t: t.created))
 
 
@@ -186,8 +196,8 @@ def add_tag():
 
 @app.route('/tag/<int:tag_id>/edit', methods=('POST',))
 @login_required
-def edit_tag(tag_id: int):
-    tag = get_tag(tag_id)
+def edit_tag(tag_id: str):
+    tag = get_tag_by_id(tag_id)
     if valid_tag(request.form['name'], request.form['color']):
         tag.name = request.form['name']
         tag.color = request.form['color']
@@ -197,49 +207,49 @@ def edit_tag(tag_id: int):
 
 @app.route('/tag/<int:tag_id>/delete', methods=('POST',))
 @login_required
-def delete_tag(tag_id):
-    tag = get_tag(tag_id)
+def delete_tag(tag_id: str):
+    tag = get_tag_by_id(tag_id)
     tag_name = tag.name
     db.session.delete(tag)
     db.session.commit()
-    flash(f'Tag {tag_name} was successfully deleted!')
+    flash(f'Tag {tag_name} was successfully deleted!', category='success')
     return redirect(url_for('tags'))
 
 
 def valid_date(date: str, only_monday=False, name='Date') -> bool:
     if not date:
-        flash(f'{name} is required!')
+        flash(f'{name} is required!', category='danger')
         return False
     try:
         date = datetime.datetime.fromisoformat(date)
         if only_monday and date.weekday() != 0:
-            flash(f'{name} must be a Monday (start of week)')
+            flash(f'{name} must be a Monday (start of week)', category='danger')
             return False
         else:
             return True
     except:
-        flash(f'{name} is required to be in YYYY-MM-DD format')
+        flash(f'{name} is required to be in YYYY-MM-DD format', category='danger')
         return False
 
 
-def valid_entry_tags(tags: list) -> tuple[list[Tag], bool]:
+def valid_entry_tags(tags: list[str]) -> tuple[Optional[list[Tag]], bool]:
     if len(tags) == 0:
-        flash('At least one tag must be selected!')
-        return [], False
-    tags_db = [get_tag(t) for t in tags]
+        flash('At least one tag must be selected!', category='danger')
+        return None, False
+    tags_db = [get_tag_by_id(t) for t in tags]
     for t in tags_db:
         if t.user_id != current_user.id:
-            flash('Invalid tag choice!')
-            return [], False
+            flash('Invalid tag choice!', category='danger')
+            return None, False
     return tags_db, True
 
 
 def valid_exp_years(exp_years: str) -> bool:
     if not exp_years:
-        flash('Life expectancy is required!')
+        flash('Life expectancy is required!', category='danger')
         return False
     if not exp_years.isdigit():
-        flash('Life expectancy is required to be a non-negative integer value')
+        flash('Life expectancy is required to be a non-negative integer value', category='danger')
         return False
     return True
 
@@ -256,13 +266,13 @@ def settings():
             user.birth = date.fromisoformat(birth)
             user.exp_years = exp_years
             db.session.commit()
-            flash('Settings were successfully updated!')
+            flash('Settings were successfully updated!', category='success')
             return redirect(url_for('settings'))
     return render_template('settings.html', birth=current_user.birth, exp_years=current_user.exp_years)
 
 
 @app.route('/login')
-def login():
+def login() -> str:
     return render_template('login.html')
 
 
@@ -270,7 +280,7 @@ def login():
 @login_required
 def logout():
     logout_user()
-    flash('Successfully signed out!')
+    flash('Successfully signed out!', category='success')
     return redirect(url_for('index'))
 
 
@@ -302,7 +312,7 @@ def oauth2_callback(provider):
     else:
         provider_info = app.config['OAUTH2_PROVIDERS'][provider]
     if 'error' in request.args:
-        flash(request.args.items())
+        flash(request.args.items(), category='danger')
         return redirect(url_for('index'))
     if request.args['state'] != session.get('oauth2_state'):
         abort(401)
@@ -328,13 +338,14 @@ def oauth2_callback(provider):
         abort(401)
     # Get or add user
     oauth_id = provider_info['userinfo']['oauth_id'](response)
-    user, is_new_user = get_or_add_user(oauth_id)
+    user, is_new_user = get_create_user_by_oauth_id(oauth_id)
     login_user(user)
     if is_new_user:
-        flash('Welcome to your new account. Please set your date of birth and life expectancy here.')
+        flash('Welcome to your new account. Please set your date of birth and life expectancy here.',
+              category='primary')
         return redirect(url_for('settings'))
     else:
-        flash('You have been signed in. Welcome back!')
+        flash('You have been signed in. Welcome back!', category='success')
         return redirect(url_for('index'))
 
 

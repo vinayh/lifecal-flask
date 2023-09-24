@@ -40,7 +40,8 @@
             weekStart: 1,
             daysOfWeekDisabled: "0,2,3,4,5,6",
             daysOfWeekHighlighted: "1",
-            calendarWeeks: true
+            calendarWeeks: true,
+            datesDisabled: {{ disabled_dates | safe }}
         });
     </script>
 {% endblock %}
