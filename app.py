@@ -232,8 +232,7 @@ def delete_entry(entry_id: str):
 def delete_user(user_id: str):
     if user_id != current_user.id:
         abort(404)
-    Entry.query.filter(Entry.user_id == user_id).delete_entry()
-    User.query.filter(User.id == user_id).delete_entry()
+    User.query.filter(User.id == user_id).delete()
     db.session.commit()
     logout_user()
     flash(
