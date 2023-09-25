@@ -18,18 +18,20 @@
             <label for="start" class="form-label">Start date</label>
             <div id="weekpicker">
                 <input type="text" class="form-control" name="start" placeholder="Entry start date: YYYY-MM-DD"
-                       value="{{ request.form['start'] or request.args.get('start') }}">
+                       value="{{ request.form['start'] or request.args.get('start') or default_date }}">
             </div>
         </div>
 
 
         <div class="mb-3">
-            <label for="tags" class="form-label">Tags</label>
-            <select name="tags" class="form-select" multiple aria-label="multiple select example">
+            <label for="tags" class="form-label">Tags <small>(Press <kbd>↵ Return</kbd> to add new
+                tag)</small></label>
+            <select name="tags[]" class="form-select" multiple aria-label="multiple select example"
+                    data-allow-new="true" data-allow-clear="true">
                 {# Needed for first actual tag to show when selected #}
                 <option selected disabled hidden value="">Choose a tag...</option>
                 {% for t in tags %}
-                    <option data-badge-style="success" value="{{ t.id }}">{{ t.name }}</option>
+                    <option data-badge-style="success" value="{{ t.name }}">{{ t.name }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -53,7 +55,7 @@
             daysOfWeekDisabled: "0,2,3,4,5,6",
             daysOfWeekHighlighted: "1",
             calendarWeeks: true,
-            {#datesDisabled: {{ disabled_dates | safe }}#}
+            datesDisabled: {{ disabled_dates | safe }}
         });
     </script>
 {% endblock %}

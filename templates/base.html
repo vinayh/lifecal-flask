@@ -1,80 +1,97 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-        <!-- Bootstrap -->
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.10.0/css/bootstrap-datepicker.min.css" integrity="sha512-34s5cpvaNG3BknEWSuOncX28vz97bRI59UnVtEEpFX536A7BtZSJHsDyFoCl8S7Dt2TPzcrCEoHBGeM4SUBDBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-        <link rel="stylesheet" href="{{ url_for('static', filename= 'css/style.css') }}">
-        <!-- JavaScript -->
-        <script src="https://kit.fontawesome.com/b8e587cefb.js" crossorigin="anonymous"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.11.8/umd/popper.min.js" integrity="sha512-TPh2Oxlg1zp+kz3nFA0C5vVC6leG/6mm1z9+mA81MI5eaUVqasPLO8Cuk4gMF4gUfP5etR73rgU/8PNMsSesoQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
-        <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js"   integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8="   crossorigin="anonymous"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.10.0/js/bootstrap-datepicker.min.js" integrity="sha512-LsnSViqQyaXpD4mBBdRYeP6sRwJiJveh2ZIbW41EBrNmKxgr/LFZIiWT6yr+nycvhvauz8c2nYMhrP80YhG7Cw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-        {% block header %} {% endblock %}
-        <title>{% block title %} {% endblock %}</title>
-    </head>
-    <body>
-        <nav class="navbar navbar-expand-lg bg-body-tertiary">
-            <div class="container-fluid">
-                <a class="navbar-brand" href="{{  url_for('index') }}">Life Calendar</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                        <li class="nav-item">
-                            {% if active_page == 'index' %}
-                                <a class="nav-link active" aria-current="page" href="{{  url_for('index') }}">Home</a>
-                            {% else %}
-                                <a class="nav-link" href="{{  url_for('index') }}">Home</a>
-                            {% endif %}
-                        </li>
-                        {% if current_user.is_authenticated %}
-                        <li class="nav-item">
-                            {% if active_page == 'add_entry' %}
-                                <a class="nav-link active" aria-current="page" href="{{  url_for('add_entry') }}">Add entry</a>
-                            {% else %}
-                                <a class="nav-link" href="{{  url_for('add_entry') }}">Add entry</a>
-                            {% endif %}
-                        </li>
-                        <li class="nav-item">
-                            {% if active_page == 'tags' %}
-                                <a class="nav-link active" aria-current="page" href="{{  url_for('tags') }}">Tags</a>
-                            {% else %}
-                                <a class="nav-link" href="{{  url_for('tags') }}">Tags</a>
-                            {% endif %}
-                        </li>
-                        <li class="nav-item">
-                            {% if active_page == 'settings' %}
-                                <a class="nav-link active" aria-current="page" href="{{  url_for('settings') }}">Settings</a>
-                            {% else %}
-                                <a class="nav-link" href="{{  url_for('settings') }}">Settings</a>
-                            {% endif %}
-                        </li>
-                        {% endif %}
-                    </ul>
-                    <form class="d-flex" role="search">
-                        {% if current_user.is_authenticated %}
-                        <a class="btn btn-primary btn-sm" href="{{  url_for('logout') }}">Sign out</a>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+          rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+          crossorigin="anonymous">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.10.0/css/bootstrap-datepicker.min.css"
+          integrity="sha512-34s5cpvaNG3BknEWSuOncX28vz97bRI59UnVtEEpFX536A7BtZSJHsDyFoCl8S7Dt2TPzcrCEoHBGeM4SUBDBw=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename= 'css/style.css') }}">
+    <!-- JavaScript -->
+    <script src="https://kit.fontawesome.com/b8e587cefb.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.11.8/umd/popper.min.js"
+            integrity="sha512-TPh2Oxlg1zp+kz3nFA0C5vVC6leG/6mm1z9+mA81MI5eaUVqasPLO8Cuk4gMF4gUfP5etR73rgU/8PNMsSesoQ=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+            crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js"
+            integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.10.0/js/bootstrap-datepicker.min.js"
+            integrity="sha512-LsnSViqQyaXpD4mBBdRYeP6sRwJiJveh2ZIbW41EBrNmKxgr/LFZIiWT6yr+nycvhvauz8c2nYMhrP80YhG7Cw=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    {% block header %} {% endblock %}
+    <title>{% block title %} {% endblock %}</title>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg bg-body-tertiary">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="{{ url_for('index') }}">Life Calendar</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    {% if active_page == 'index' %}
+                        <a class="nav-link active" aria-current="page" href="{{ url_for('index') }}">Home</a>
+                    {% else %}
+                        <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+                    {% endif %}
+                </li>
+                {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        {% if active_page == 'add_entry' %}
+                            <a class="nav-link active" aria-current="page" href="{{ url_for('add_entry') }}">Add
+                                entry</a>
                         {% else %}
-                        <a class="btn btn-primary btn-sm" href="{{  url_for('oauth2_authorize', provider='github') }}"><i class="fa fa-github"></i> Sign in with GitHub</a>
-                            &nbsp;
-                        <a class="btn btn-primary btn-sm" href="{{  url_for('oauth2_authorize', provider='google') }}"><i class="fa fa-google"></i> Sign in with Google</a>
+                            <a class="nav-link" href="{{ url_for('add_entry') }}">Add entry</a>
                         {% endif %}
-                    </form>
-                </div>
-            </div>
-        </nav>
-        <div class="container">
-            {% for category, message in get_flashed_messages(with_categories=True) %}
-                <div class="alert alert-{{ category }}"> {{ message }} </div>
-            {% endfor %}
-            {% block content %} {% endblock %}
+                    </li>
+                    <li class="nav-item">
+                        {% if active_page == 'tags' %}
+                            <a class="nav-link active" aria-current="page" href="{{ url_for('tags') }}">Tags</a>
+                        {% else %}
+                            <a class="nav-link" href="{{ url_for('tags') }}">Tags</a>
+                        {% endif %}
+                    </li>
+                    <li class="nav-item">
+                        {% if active_page == 'settings' %}
+                            <a class="nav-link active" aria-current="page" href="{{ url_for('settings') }}">Settings</a>
+                        {% else %}
+                            <a class="nav-link" href="{{ url_for('settings') }}">Settings</a>
+                        {% endif %}
+                    </li>
+                {% endif %}
+            </ul>
+            <form class="d-flex" role="search">
+                {% if current_user.is_authenticated %}
+                    <a class="btn btn-primary btn-sm" href="{{ url_for('logout') }}">Sign out</a>
+                {% else %}
+                    <a class="btn btn-primary btn-sm" href="{{ url_for('oauth2_authorize', provider='github') }}"><i
+                            class="fa fa-github"></i> Sign in with GitHub</a>
+                    &nbsp;
+                    <a class="btn btn-primary btn-sm" href="{{ url_for('oauth2_authorize', provider='google') }}"><i
+                            class="fa fa-google"></i> Sign in with Google</a>
+                {% endif %}
+            </form>
         </div>
-    </body>
+    </div>
+</nav>
+<div class="container">
+    <br>
+    {% for category, message in get_flashed_messages(with_categories=True) %}
+        <div class="alert alert-{{ category }}" style="padding: 0.5rem"> {{ message }} </div>
+    {% endfor %}
+    {% block content %} {% endblock %}
+</div>
+</body>
 
-    {% block footer %} {% endblock %}
+{% block footer %} {% endblock %}
 </html>

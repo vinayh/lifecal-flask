@@ -3,18 +3,20 @@
 
 {% block content %}
     <h2>{% block title %} Tags {% endblock %}</h2>
-    <div class="container text-center">
+    <ul class="list-group">
         {% for t in tags %}
             <form action="{{ url_for('edit_tag', tag_id=t.id) }}" method="POST">
-                <div class="d-flex flex-row bd-highlight mb-3">
+                <div class="list-group-item d-flex flex-row bd-highlight mb-3">
                     <div class="p-2 bd-highlight">
                         <input type="text" name="name" placeholder="Tag name" class="form-control" value="{{ t.name }}">
                     </div>
+
                     <div class="p-2 bd-highlight">
-                        <input type="color" name="color" placeholder="Color" class="form-control"
+                        <input type="color" name="color" placeholder="Color" class="form-control color"
                                value="{{ t.color or '0000FFFF' }}">
                     </div>
-                    <div class="p-2 bd-highlight">
+
+                    <div class="ms-auto p-2 bd-highlight">
                         <input type="submit" value="Update" class="btn btn-primary btn-sm">
                     </div>
             </form>
@@ -27,20 +29,48 @@
             </div>
         {% endfor %}
 
-    <form action="{{ url_for('add_tag') }}" method="POST">
-        <div class="d-flex flex-row bd-highlight mb-3">
-            <div class="p-2 bd-highlight">
-                <input type="text" name="name" placeholder="New tag name" class="form-control"
-                       value="{{ request.form['name'] }}">
+        <form action="{{ url_for('add_tag') }}" method="POST">
+            <div class="list-group-item d-flex flex-row bd-highlight mb-3">
+                <div class="p-2 bd-highlight">
+                    <input type="text" name="name" placeholder="New tag name" class="form-control"
+                           value="{{ request.form['name'] }}">
+                </div>
+                <div class="p-2 bd-highlight">
+                    <input type="color" name="color" placeholder="Color" class="form-control color"
+                           value="{{ request.form['color'] }}">
+                </div>
+                <div class="ms-auto p-2 bd-highlight">
+                    <input type="submit" value="Add" class="btn btn-primary btn-sm">
+                </div>
             </div>
-            <div class="p-2 bd-highlight">
-                <input type="color" name="color" placeholder="Color" class="form-control"
-                       value="{{ request.form['color'] }}">
-            </div>
-            <div class="p-2 bd-highlight">
-                <input type="submit" value="Add" class="btn btn-primary btn-sm">
-            </div>
-        </div>
-    </form>
-    </div>
+        </form>
+    </ul>
+
+    {# A possible UI for picking colors from a limited set, not functional yet #}
+    {#    <script>#}
+    {#        $('#menu1 li').click(function () {#}
+    {#            $('#drop4').html($(this).text() + '<span class="caret"></span>');#}
+    {#            console.log($(this).text())#}
+    {#        })#}
+    {#    </script>#}
+    {#    #}
+    {#    <ul class="nav nav-pills">#}
+    {#        <li role="presentation" class="nav-item dropdown"><a href="#" class="dropdown-toggle"#}
+    {#                                                             id="colorDropdownHead"#}
+    {#                                                             data-bs-toggle="dropdown"#}
+    {#                                                             role="button" aria-haspopup="true"#}
+    {#                                                             aria-expanded="false">Color<span#}
+    {#                class="caret"></span></a>#}
+    {#            <ul class="dropdown-menu" id="colorDropdown" aria-labelledby="colorDropdownHead">#}
+    {#                <li><a class="dropdown-item bg-primary text-white" href="#">Action</a></li>#}
+    {#                <li><a class="dropdown-item bg-secondary text-white" href="#">Another action</a>#}
+    {#                </li>#}
+    {#                <li><a class="dropdown-item bg-success text-white" href="#">Another action</a></li>#}
+    {#                <li><a class="dropdown-item bg-danger text-white" href="#">Another action</a></li>#}
+    {#                <li><a class="dropdown-item bg-warning text-dark" href="#">Another action</a></li>#}
+    {#                <li><a class="dropdown-item bg-info text-white" href="#">Another action</a></li>#}
+    {#                <li><a class="dropdown-item bg-dark text-white" href="#">Another action</a></li>#}
+    {#            </ul>#}
+    {#        </li>#}
+    {#    </ul>#}
 {% endblock %}

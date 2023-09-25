@@ -23,15 +23,18 @@
         </div>
 
         <div class="mb-3">
-            <label for="tags" class="form-label">Tags</label>
-            <select name="tags" class="form-select" multiple aria-label="multiple select example">
+            <label for="tags" class="form-label">Tags <small>(Press <kbd>↵ Return</kbd> to add new
+                tag)</small></label>
+            <select name="tags[]" class="form-select" multiple aria-label="multiple select example"
+                    data-allow-new="true" data-allow-clear="true">
                 {# Needed for first actual tag to show when selected #}
                 <option selected disabled hidden value="">Choose a tag...</option>
                 {% for t in tags %}
                     {% if t in entry.tags %}
-                        <option selected="selected" data-badge-style="success" value="{{ t.id }}">{{ t.name }}</option>
+                        <option selected="selected" data-badge-style="primary"
+                                value="{{ t.name }}">{{ t.name }}</option>
                     {% else %}
-                        <option value="{{ t.id }}">{{ t.name }}</option>
+                        <option value="{{ t.name }}">{{ t.name }}</option>
                     {% endif %}
                 {% endfor %}
             </select>
@@ -58,31 +61,10 @@
             format: "yyyy-mm-dd",
             maxViewMode: 3,
             weekStart: 1,
-            maxViewMode: 3,
             daysOfWeekDisabled: "0,2,3,4,5,6",
             daysOfWeekHighlighted: "1",
             calendarWeeks: true,
             datesDisabled: {{ disabled_dates | safe }}
         });
     </script>
-
-    <style>
-        .form-control-focus {
-            color: #212529;
-            background-color: #fff;
-            border-color: #86b7fe;
-            outline: 0;
-            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-        }
-
-        .was-validated :valid + .form-control-focus {
-            border-color: #198754;
-            box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
-        }
-
-        .was-validated :invalid + .form-control-focus {
-            border-color: #dc3545;
-            box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
-        }
-    </style>
 {% endblock %}
