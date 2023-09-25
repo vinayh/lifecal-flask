@@ -31,7 +31,9 @@
 <body>
 <nav class="navbar navbar-expand-lg bg-body-tertiary">
     <div class="container-fluid">
-        <a class="navbar-brand" href="{{ url_for('index') }}">Life Calendar</a>
+        <a class="navbar-brand" href="{{ url_for('index') }}"><img
+                src="{{ url_for('static', filename='assets/logo.jpg') }}" id="navbar-logo"> Life
+            Calendar</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
                 aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -40,39 +42,47 @@
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item">
                     {% if active_page == 'index' %}
-                        <a class="nav-link active" aria-current="page" href="{{ url_for('index') }}">Home</a>
+                        <a class="nav-link active" aria-current="page" href="{{ url_for('index') }}"><i
+                                class="fa-regular fa-calendar-days"></i> Home</a>
                     {% else %}
-                        <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+                        <a class="nav-link" href="{{ url_for('index') }}"><i class="fa-regular fa-calendar-days"></i>
+                            Home</a>
                     {% endif %}
                 </li>
                 {% if current_user.is_authenticated %}
                     <li class="nav-item">
                         {% if active_page == 'add_entry' %}
-                            <a class="nav-link active" aria-current="page" href="{{ url_for('add_entry') }}">Add
+                            <a class="nav-link active" aria-current="page" href="{{ url_for('add_entry') }}"><i
+                                    class="fa-regular fa-square-plus"></i> Add
                                 entry</a>
                         {% else %}
-                            <a class="nav-link" href="{{ url_for('add_entry') }}">Add entry</a>
+                            <a class="nav-link" href="{{ url_for('add_entry') }}"><i
+                                    class="fa-regular fa-square-plus"></i> Add entry</a>
                         {% endif %}
                     </li>
                     <li class="nav-item">
                         {% if active_page == 'tags' %}
-                            <a class="nav-link active" aria-current="page" href="{{ url_for('tags') }}">Tags</a>
+                            <a class="nav-link active" aria-current="page" href="{{ url_for('tags') }}"><i
+                                    class="fa-solid fa-tags"></i> Tags</a>
                         {% else %}
-                            <a class="nav-link" href="{{ url_for('tags') }}">Tags</a>
+                            <a class="nav-link" href="{{ url_for('tags') }}"><i class="fa-solid fa-tags"></i> Tags</a>
                         {% endif %}
                     </li>
                     <li class="nav-item">
                         {% if active_page == 'settings' %}
-                            <a class="nav-link active" aria-current="page" href="{{ url_for('settings') }}">Settings</a>
+                            <a class="nav-link active" aria-current="page" href="{{ url_for('settings') }}"><i
+                                    class="fa-solid fa-gear"></i> Settings</a>
                         {% else %}
-                            <a class="nav-link" href="{{ url_for('settings') }}">Settings</a>
+                            <a class="nav-link" href="{{ url_for('settings') }}"><i class="fa-solid fa-gear"></i>
+                                Settings</a>
                         {% endif %}
                     </li>
                 {% endif %}
             </ul>
             <form class="d-flex" role="search">
                 {% if current_user.is_authenticated %}
-                    <a class="btn btn-primary btn-sm" href="{{ url_for('logout') }}">Sign out</a>
+                    <a class="btn btn-primary btn-sm" href="{{ url_for('logout') }}"><i
+                            class="fa-solid fa-right-from-bracket"></i> Sign out</a>
                 {% else %}
                     <a class="btn btn-primary btn-sm" href="{{ url_for('oauth2_authorize', provider='github') }}"><i
                             class="fa fa-github"></i> Sign in with GitHub</a>

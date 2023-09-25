@@ -3,6 +3,18 @@
 
 {% block title %} Life Calendar {% endblock %}
 {% block content %}
-<h1>Welcome!</h1>
-    Please <a href="{{ url_for('login') }}">sign in</a> to view your personalized calendar.
+    <h1>Welcome!</h1>
+    Please sign in below to view your personalized calendar.
+
+    <div id="login-container">
+        <div id="login-content">
+            <h1>Sign in</h1>
+            <br><br>
+            <a class="btn btn-primary" href="{{ url_for('oauth2_authorize', provider='github') }}"><i
+                    class="fa fa-github"></i> Sign in with GitHub</a>
+            <br>&nbsp;<br>
+            <a class="btn btn-primary" href="{{ url_for('oauth2_authorize', provider='google') }}"><i
+                    class="fa fa-google"></i> Sign in with Google</a>
+        </div>
+    </div>
 {% endblock %}

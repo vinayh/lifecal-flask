@@ -3,10 +3,11 @@
 
 {% block content %}
     <h2>{% block title %} Tags {% endblock %}</h2>
-    <ul class="list-group">
+
+    <div class="tags-container">
         {% for t in tags %}
             <form action="{{ url_for('edit_tag', tag_id=t.id) }}" method="POST">
-                <div class="list-group-item d-flex flex-row bd-highlight mb-3">
+                <div class="d-flex">
                     <div class="p-2 bd-highlight">
                         <input type="text" name="name" placeholder="Tag name" class="form-control" value="{{ t.name }}">
                     </div>
@@ -29,22 +30,22 @@
             </div>
         {% endfor %}
 
-        <form action="{{ url_for('add_tag') }}" method="POST">
-            <div class="list-group-item d-flex flex-row bd-highlight mb-3">
-                <div class="p-2 bd-highlight">
-                    <input type="text" name="name" placeholder="New tag name" class="form-control"
-                           value="{{ request.form['name'] }}">
-                </div>
-                <div class="p-2 bd-highlight">
-                    <input type="color" name="color" placeholder="Color" class="form-control color"
-                           value="{{ request.form['color'] }}">
-                </div>
-                <div class="ms-auto p-2 bd-highlight">
-                    <input type="submit" value="Add" class="btn btn-primary btn-sm">
-                </div>
+    <form action="{{ url_for('add_tag') }}" method="POST">
+        <div class="d-flex">
+            <div class="p-2 bd-highlight">
+                <input type="text" name="name" placeholder="New tag name" class="form-control"
+                       value="{{ request.form['name'] }}">
             </div>
-        </form>
-    </ul>
+            <div class="p-2 bd-highlight">
+                <input type="color" name="color" placeholder="Color" class="form-control color"
+                       value="{{ request.form['color'] }}">
+            </div>
+            <div class="ms-auto p-2 bd-highlight">
+                <input type="submit" value="Add" class="btn btn-primary btn-sm">
+            </div>
+        </div>
+    </form>
+    </div>
 
     {# A possible UI for picking colors from a limited set, not functional yet #}
     {#    <script>#}

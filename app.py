@@ -120,7 +120,7 @@ def index() -> str:
         return render_template(
             "index.html",
             entries=all_entries,
-            birth=current_user.birth,
+            birth_readable=current_user.birth.strftime("%d %B, %Y"),
             exp_years=current_user.exp_years,
         )
 
@@ -283,6 +283,7 @@ def add_tag_helper(name: str, color: str = "0000FFFF", return_tag=False):
         )
         db.session.add(new_tag)
         db.session.commit()
+        flash(f"Added tag f{name}!", category="success")
         if return_tag:
             db.session.refresh(new_tag)
             return new_tag
